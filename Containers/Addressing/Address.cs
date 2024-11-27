@@ -79,8 +79,6 @@ namespace Containers.Addressing
             ulong seed = (ulong)r.NextInt64();
             int realLen = (BitDensity + 7) / 8;  // Calculate the real length (rounded up to byte size)
 
-
-
             // Initialize shuffler and scrambler arrays
             Shuffler = new byte[realLen];
             Scrambler = new byte[realLen];
@@ -206,7 +204,7 @@ namespace Containers.Addressing
                     modulus -= 1;
                 }
 
-                // Shuffle the data using the Scrambler
+                // Jumble up the data using the Scrambler
                 for (int i = 0; i < Scrambler.Length; ++i)
                 {
                     int j = Shuffler[i];
@@ -216,7 +214,6 @@ namespace Containers.Addressing
                     if (Scrambler.Length * 8 == _byteSize * Encoder.GetBitsPerChar() || i < Scrambler.Length - 1)
                     {
                         mask[i] = (byte)(data[j] ^ Scrambler[(i + accumulator) % modulus]);
-
                     }
                     else
                     {
