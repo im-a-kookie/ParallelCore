@@ -15,15 +15,15 @@ namespace Containers.Emission
     {
 
         /// <summary>
-        /// Maps parameters from input to output for delegate construction
+        /// Maps parameters from entry->target for delegate construction
         /// </summary>
         public struct Mapping
         {
-            int src;
-            int dst;
-            public Mapping(int src, int dst)
+            public readonly int src;
+            public readonly int dst;
+            public Mapping(int entry, int target)
             {
-                this.src = src; this.dst = dst;
+                this.src = entry; this.dst = target;
             }
         }
 
@@ -78,47 +78,55 @@ namespace Containers.Emission
         }
 
         /// <summary>
-        /// Encapsulation context for mapping parameters in the parameter mapping algorithm. Provides some useful helpers and validation.
+        /// Encapsulation context for mapping entry->target parameter signatures
         /// </summary>
         public class MappingContext
         {
             /// <summary>
-            /// The input parameters provided to the mapping algorithm
+            /// The entry parameters provided to the mapping algorithm
             /// </summary>
-            public Type[] InputParameters { get; set; }
+            public Type[] EntryParameters { get; set; }
 
             /// <summary>
-            /// The output parameters expected to be mapped from the inputs
+            /// The target parameters expected to be mapped from the entry
             /// </summary>
-            public Type[] OutputParameters { get; set; }
+            public Type[] TargetParameters { get; set; }
 
             /// <summary>
-            /// Dictionary mapping <see cref="OutputParameters"/> index to <see cref="InputParameters"/> index (or -1 for null/default).
+            /// Dictionary mapping <see cref="TargetParameters"/> index to <see cref="EntryParameters"/> index (or -1 for null/default).
             /// </summary>
             public Dictionary<int, int> Mappings { get; set; }
 
             /// <summary>
-            /// A flag array indicating the consumption state of input parameters
+            /// A flag array indicating the consumption state of entry parameters
             /// </summary>
-            public bool[] SolvedInputs { get; set; }
+            public bool[] SolvedEntries { get; set; }
 
             /// <summary>
-            /// A flag array indicating the consumption state of output parameters
+            /// A flag array indicating the consumption state of target parameters
             /// </summary>
-            public bool[] SolvedOutputs { get; set; }
+            public bool[] SolvedTargets { get; set; }
 
             /// <summary>
             /// Initializes a new instance of the <see cref="MappingContext"/> class.
             /// </summary>
-            /// <param name="inputParameters">The input parameters.</param>
-            /// <param name="outputParameters">The output parameters.</param>
-            public MappingContext(Type[] inputParameters, Type[] outputParameters)
+            /// <param name="entryParameters">The parameters for the entry call.</param>
+            /// <param name="targetParameters">The parameters for the target call.</param>
+            public MappingContext(Type[] entryParameters, Type[] targetParameters)
             {
-                InputParameters = inputParameters;
-                OutputParameters = outputParameters;
+
+                if (entryParameters == null || entryParameters.Contains(null))
+                    throw new ArgumentNullException($"{nameof(entryParameters)} contains null type. This is not valid.");
+
+                if (targetParameters == null || targetParameters.Contains(null))
+                    throw new ArgumentNullException($"{nameof(targetParameters)} contains null type. This is not valid.");
+
+
+                EntryParameters = entryParameters;
+                TargetParameters = targetParameters;
                 Mappings = new Dictionary<int, int>(); // Initialize the dictionary to hold mappings
-                SolvedInputs = new bool[inputParameters.Length]; // Initialize input flags array
-                SolvedOutputs = new bool[outputParameters.Length]; // Initialize output flags array
+                SolvedEntries = new bool[entryParameters.Length]; // Initialize input flags array
+                SolvedTargets = new bool[targetParameters.Length]; // Initialize output flags array
             }
 
             /// <summary>
@@ -131,22 +139,22 @@ namespace Containers.Emission
             {
                 // Validate the indices
                 // Remmeber that -1 is permitted to indicate nullification
-                if (i >= InputParameters.Length || (i < 0 && i != -1))
+                if (i >= EntryParameters.Length || (i < 0 && i != -1))
                     throw new ArgumentOutOfRangeException(
                         "The index of the input is not valid for the parameter array");
 
-                if(o < 0 || o >= OutputParameters.Length)
+                if(o < 0 || o >= TargetParameters.Length)
                     throw new ArgumentOutOfRangeException(
                         "The output index must fall within the output parameter array!");
 
-                if (SolvedInputs[o])
+                if (SolvedTargets[o])
                     throw new InvalidOperationException(
                         $"The output parameter at index {o} is already provided");
 
                 // Now we can fill it
                 Mappings.TryAdd(o, i);
-                SolvedInputs[i] = true;
-                SolvedOutputs[o] = true;
+                if(i >= 0) SolvedEntries[i] = true; //already checked i>len
+                SolvedTargets[o] = true;
             }
 
             /// <summary>
@@ -155,18 +163,21 @@ namespace Containers.Emission
             /// <returns>A sorted result of mapping structs</returns>
             public List<Mapping> ComputeSortedMapping(bool nullifyEmptyOutputs = true)
             {
-                for(int o = 0; o < OutputParameters.Length; ++o)
+                for(int o = 0; o < TargetParameters.Length; ++o)
                 {
-                    if (!SolvedOutputs[o] && nullifyEmptyOutputs)
+                    if (!SolvedTargets[o])
                     {
-                        FillUnmappedOutputs(this);
-                        break;
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException(
-                            $"Parameter could not be located for output parameter {o} ({OutputParameters[o]}" +
-                            $". Mapping cannot be generated.");
+                        if (nullifyEmptyOutputs)
+                        {
+                            FillUnmappedOutputs(this);
+                            break;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException(
+                                $"Parameter could not be located for output parameter {o} ({TargetParameters[o]}" +
+                                $". Mapping cannot be generated.");
+                        }
                     }
                 }
 
@@ -177,6 +188,26 @@ namespace Containers.Emission
                 .ToList();
             }
 
+        }
+
+        /// <summary>
+        /// Checks type assignability of the given types.
+        /// </summary>
+        /// <param name="entry"></param>
+        /// <param name="target"></param>
+        /// <returns>A boolean indicating the compabitility of the given types</returns>
+        /// <remarks>Note that inheritance hierarchy is inverted. For example, if the entry is Model, the target must inherit Model.</remarks>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static bool CheckTypeCompabitility(Type entry, Type target)
+        {
+            if (entry == null)
+                throw new ArgumentNullException("Cannot match null entry type!");
+
+            if (target == null)
+                throw new ArgumentNullException("Cannot match null target type!");
+
+
+            return target.IsAssignableTo(entry) || target == typeof(object);
         }
 
         /// <summary>
@@ -255,11 +286,11 @@ namespace Containers.Emission
 
 
         /// <summary>
-        /// Generates a list of mappings that relate the parameters of the input delegate, to an array of parameters
-        /// that can be provided directly to a method or function delegate.
+        /// Generates a list of mappings that relate the parameters of the entry delegate, to an array of parameters
+        /// that can be provided directly to a method or function delegate (target)
         /// </summary>
-        /// <param name="input"></param>
-        /// <param name="output"></param>
+        /// <param name="entryPoint"></param>
+        /// <param name="target"></param>
         /// <returns></returns>
         /// <remarks>
         /// Algorithm details are provided in <see cref="MapTypeArrays(Type[], Type[])"/>
@@ -274,11 +305,11 @@ namespace Containers.Emission
         }
 
         /// <summary>
-        /// Generates a list of parameter mappings, ordered according to output parameter order (and ldArg.S stack preparation for Call opcode).
+        /// Generates a list of parameter mappings, ordered according to target parameter order (for LdArgS->Call).
         /// 
         /// <para>
         /// This function fills aggressively from the first parameter. Design assumes no more than
-        /// one untyped (object) parameter in <paramref name="inputParameters"/>, and <see cref="ArgumentException"/>
+        /// one untyped (object) parameter in <paramref name="entryParameters"/>, and <see cref="ArgumentException"/>
         /// is thrown if more are provided.
         /// </para>
         /// 
@@ -290,17 +321,22 @@ namespace Containers.Emission
         /// </list>
         /// </para>
         /// </summary>
-        /// <param name="inputParameters">The parameters given by the entry point</param>
-        /// <param name="outputParameters">The parameters expected by the Call target</param>
+        /// <param name="entryParameters">The parameters given by the entry point</param>
+        /// <param name="targetParameters">The parameters expected by the Call target</param>
         /// <returns>An ordered list of [src, dst] mappings, where src = -1 indicates null/default, 
         /// sorted by output parameter order</returns>
-        public static List<Mapping> MapTypeArrays(Type[] inputParameters, Type[] outputParameters)
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        public static List<Mapping> MapTypeArrays(Type[] entryParameters, Type[] targetParameters)
         {
+            // Validate typing of inputs
+            if (entryParameters.Where(x => x == typeof(object)).Count() > 1)
+                throw new ArgumentException("Entry parameters should contain no more than one untyped argument!");
 
             // Create the mapping context
-            MappingContext context = new MappingContext(inputParameters, outputParameters);
+            MappingContext context = new(entryParameters, targetParameters);
 
-            // Solve direct assignable mappings
+            // Solve like-like mappings
             SolveDirectMappings(context);
 
             // Solve wildcard object? assignments
@@ -312,13 +348,14 @@ namespace Containers.Emission
             // Debug output
             foreach (var k in context.Mappings)
             {
-                string str = k.Value < 0 ? "Null" : inputParameters[k.Value].ToString();
-                Logger.Default.Info($"Map: {k.Key}:{k.Value},   {str}:{outputParameters[k.Key]}");
+                string str = k.Value < 0 ? "Null" : entryParameters[k.Value].ToString();
+                Logger.Default.Info($"Map: {k.Key}:{k.Value},   {str}:{targetParameters[k.Key]}");
             }
 
             // Build the resulting mapping
             return context.ComputeSortedMapping();
         }
+
 
         /// <summary>
         /// Solves immediately assignable parameter mappings in the given context. This method maps
@@ -327,14 +364,14 @@ namespace Containers.Emission
         /// <param name="context"></param>
         private static void SolveDirectMappings(MappingContext context)
         {
-            for (int i = 0; i < context.InputParameters.Length; i++)
+            for (int i = 0; i < context.EntryParameters.Length; i++)
             {
-                if (context.SolvedInputs[i]) continue; //skip consumed
-                var it = context.InputParameters[i]; //cache
+                if (context.SolvedEntries[i]) continue; //skip consumed
+                var it = context.EntryParameters[i]; //cache
 
-                for (int o = 0; o < context.OutputParameters.Length; o++)
+                for (int o = 0; o < context.TargetParameters.Length; o++)
                 {
-                    if (context.SolvedOutputs[o] || context.SolvedInputs[i]) continue;
+                    if (context.SolvedTargets[o] || context.SolvedEntries[i]) continue;
 
                     // This is solved on the first pass when
                     // 1. The output type is not object?
@@ -349,7 +386,7 @@ namespace Containers.Emission
                         if (SolveObjectType(i, o, context)) break;
                     }
                     // Otherwise, check assignability and fill
-                    else if (context.OutputParameters[o].IsAssignableTo(it))
+                    else if (context.TargetParameters[o].IsAssignableTo(it))
                     {
                         // Direct assignment possible
                         context.Map(o, i);
@@ -360,7 +397,7 @@ namespace Containers.Emission
         }
 
         /// <summary>
-        /// Attempt to consume the given input index parameter into an output parameter, where the input is
+        /// Attempt to consume the given input (entry) index parameter into an output (target) parameter, where the input is
         /// untyped/object, while ensuring reservation of output for any matchning typed input parameters.
         /// </summary>
         /// <param name="i">The input parameter index (must be an object)</param>
@@ -371,10 +408,10 @@ namespace Containers.Emission
         private static bool SolveObjectType(int i, int o, MappingContext context)
         {
             // Don't allow mismatching of non-object input[i] parameter
-            if (context.InputParameters[i] != typeof(object))
+            if (context.EntryParameters[i] != typeof(object))
                 throw new ArgumentException($"The parameter at i ({i}) must be System.Object");
 
-            if (context.OutputParameters[o] == typeof(object))
+            if (context.TargetParameters[o] == typeof(object))
             {
                 // Both are object,so direct assignment is simple
                 context.Map(o, i);
@@ -383,10 +420,10 @@ namespace Containers.Emission
 
             // Determine whether output parameter should be reserved for unresolved inputs
             bool isAssignable = false;
-            for (int t = 0; t < context.InputParameters.Length; t++)
+            for (int t = 0; t < context.EntryParameters.Length; t++)
             {
-                if (context.SolvedInputs[t] || t == i) continue;
-                if (context.OutputParameters[o].IsAssignableTo(context.InputParameters[t]))
+                if (context.SolvedEntries[t] || t == i) continue;
+                if (context.TargetParameters[o].IsAssignableTo(context.EntryParameters[t]))
                 {
                     isAssignable = true;
                     break;
@@ -410,16 +447,16 @@ namespace Containers.Emission
         /// <param name="context"></param>
         private static void SolveWildcardMappings(MappingContext context)
         {
-            for (int o = 0; o < context.OutputParameters.Length; o++)
+            for (int o = 0; o < context.TargetParameters.Length; o++)
             {
                 // Skip indices that have been consumed, or that are not wildcard friendly
-                if (context.SolvedOutputs[o] || context.OutputParameters[o] != typeof(object)) continue;
+                if (context.SolvedTargets[o] || context.TargetParameters[o] != typeof(object)) continue;
 
                 // Now look to consume a remaining input parameter
-                for (int i = 0; i < context.InputParameters.Length; i++)
+                for (int i = 0; i < context.EntryParameters.Length; i++)
                 {
                     // Skip consumed
-                    if (context.SolvedInputs[i]) continue;
+                    if (context.SolvedEntries[i]) continue;
                     // Or Fill it
                     context.Map(o, i);
                     break;
@@ -433,13 +470,13 @@ namespace Containers.Emission
         /// <param name="context"></param>
         private static void FillUnmappedOutputs(MappingContext context)
         {
-            for (int o = 0; o < context.OutputParameters.Length; o++)
+            for (int o = 0; o < context.TargetParameters.Length; o++)
             {
-                if (!context.SolvedOutputs[o])
+                if (!context.SolvedTargets[o])
                 {
                     // The output parameter was not mapped, so a null/default will be calculated
                     // We can find the correct nullref/0 parameter during IL gen
-                    context.Mappings.Add(o, -1);
+                    context.Map(o, -1);
                 }
             }
         }
