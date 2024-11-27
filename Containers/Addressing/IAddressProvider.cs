@@ -47,5 +47,14 @@ namespace Containers.Addressing
         /// <returns>An <see cref="Address{T}"/> instance representing the provided value.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown if the provided value exceeds the bit-density of the provider</exception>
         Address<T> FromValue(T value);
+
+        /// <summary>
+        /// Returns the total number of addresses that this provider has allocated. This value is not
+        /// necessarily threadsafe and is expected to be used for general diagnostic/inspection purposes
+        /// only.
+        /// </summary>
+        /// <returns></returns>
+        int GetTotalAllocated();
+
     }
 }

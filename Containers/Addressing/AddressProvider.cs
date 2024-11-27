@@ -14,7 +14,7 @@ namespace Containers.Addressing
         /// <summary>
         /// Internal counter representing the total number of instances allocated in this lifetime
         /// </summary>
-        private static int _lifetimeAllocation = 0;
+        private int _lifetimeAllocation = 0;
        
         public Address<T> FromValue(T value)
         {
@@ -55,7 +55,10 @@ namespace Containers.Addressing
             return new(Address<T>.HashToBits(Address<T>.FromByteArray(data)));
         }
 
-
+        public int GetTotalAllocated()
+        {
+            return _lifetimeAllocation;
+        }
     }
 
 

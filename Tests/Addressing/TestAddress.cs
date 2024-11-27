@@ -1,9 +1,11 @@
-﻿using Containers.Addressing;
+﻿using Containers;
+using Containers.Addressing;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -18,6 +20,7 @@ namespace Tests.Addressing
     [TestClass]
     public class TestAddress
     {
+        public TestContext? TestContext { get; set; }
 
 
         // DynamicData source for generic type tests
@@ -28,21 +31,64 @@ namespace Tests.Addressing
                 yield return new object[] { typeof(short) };
                 yield return new object[] { typeof(int) };
                 yield return new object[] { typeof(long) };
+                yield return new object[] { typeof(Int128) };
             }
         }
-
 
         /// <summary>
         /// Tests that the maximum expected address is calculated correctly
         /// </summary>
         [TestMethod]
-        public void Test_MaximumArgument_Long()
+        public void Test_MaxArgument_ExplicitlyTyped()
         {
-            long max = 1L << Address<long>.BitDensity;
-            long pre = max - 1L;
-            Address<long>.HashToBits(pre);
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => Address<long>.HashToBits(max), $"Address successfully calculated for expected failure value {max}.");
+            long bonk = 1L << Address<long>.BitDensity;
+            long max = bonk - 1L;
+
+            // This is expected to workas the last possible value
+            Address<long>.HashToBits(max);
+
+            // This is expected to fail (max value + 1)
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                Address<long>.HashToBits(bonk), $"Address successfully calculated for expected failure value: {bonk}.");
         }
+
+
+        /// <summary>
+        /// Runs basic performance benchmarking
+        /// </summary>
+        [TestMethod]
+        public void Test_PerformanceAndMemoryBenchmark()
+        {
+            // Warmup
+            IAddressProvider<long> provider = new AddressProvider<long>();
+            Iterate(provider);
+            
+            long initialMemory = GC.GetTotalMemory(true); //clean 
+            Stopwatch s = Stopwatch.StartNew(); //start after clean
+            int total = 0;
+            for (int i = 0; i < 9; i++) total += Iterate(provider);
+            double elapsed = s.Elapsed.TotalNanoseconds; // get time before clean
+            elapsed = elapsed / total; // average it
+
+            // Now calculate memory usage before collection
+            long preCleanMemory = GC.GetTotalMemory(false);
+            GC.Collect(); // Force a full sweeep
+            GC.WaitForPendingFinalizers();
+            long finalMemory = GC.GetTotalMemory(true); //Stop after clean
+            // And count how much memory was freed by GC (insights into memory burden of address generation)
+            long memoryCleaned = (preCleanMemory - initialMemory) - (finalMemory - initialMemory);
+
+            // If the memory burden is high, then there's probably a memory leak
+            if ((finalMemory - initialMemory) > 1024 * 100)
+                Assert.Fail($"Unexpected large memory consumption ({(finalMemory - initialMemory) / 1024}kb). Memory leak?");
+
+            // Output the messages and stuff
+            TestContext?.WriteLine($"Average Hash Time:   {Unitify(elapsed)}");
+            TestContext?.WriteLine($"Uncollected Memory:  {finalMemory - initialMemory}b");
+            TestContext?.WriteLine($"Collected Memory:    {memoryCleaned/1024}kb");
+
+        }
+
 
         /// <summary>
         /// Tests the maximum value of the given type <typeparamref name="T"/>
@@ -50,8 +96,6 @@ namespace Tests.Addressing
         /// <typeparam name="T"></typeparam>
         public void TestMaxValue<T>() where T : struct
         {
-            typeof(Address<T>).GetMethod("ResetCounter", BindingFlags.NonPublic | BindingFlags.Static)?.Invoke(null, null);
-
             // This calculates the maximum value as a byte array (bitset style)
             byte[] maximumValue = new byte[Address<T>.ByteSize];
             for (int i = 0; i < Address<T>.BitDensity; ++i)
@@ -60,23 +104,22 @@ namespace Tests.Addressing
                 maximumValue[i / 8] |= (byte)(1 << i % 8);
             }
 
-
             try
             {
                 Address<T>.HashToBits(Address<T>.FromByteArray(maximumValue));
             }
             catch (Exception e)
             {
-                Assert.Fail($"Expected max argument (2^{Address<T>.BitDensity} - 1) throws exception: {e}");
+                Assert.Fail($"Expected max argument ({typeof(T).Name})(2^{Address<T>.BitDensity} - 1) throws exception: {e}");
             }
 
             // This calculates the maximum value as a byte array (bitset style)
             byte[] tooLargeValue = new byte[Address<T>.ByteSize];
             tooLargeValue[Address<T>.BitDensity / 8] |= (byte)(1 << Address<T>.BitDensity % 8);
 
-            // Now test the overshot
-            Assert.ThrowsException<ArgumentOutOfRangeException>(
-                () => Address<T>.HashToBits(Address<T>.FromByteArray(tooLargeValue))
+            // Now test the overshot value
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => 
+                Address<T>.HashToBits(Address<T>.FromByteArray(tooLargeValue))
             );
 
         }
@@ -102,108 +145,173 @@ namespace Tests.Addressing
 
                 // Check the text is valid in length/mapping
                 string text = testAddress.Text;
-                Assert.AreEqual(text.Length, testAddress.Size, $"The hash for {i} produces {testAddress.Text.Length} characters, {testAddress.Size} expected");
+                Assert.AreEqual(text.Length, testAddress.Size, $"The hash for ({typeof(T).Name}){i} is of incorrect length!");
               
                 // Check the text is not a hash collision
                 if (!included.Add(text))
-                    Assert.Fail($"A hash collision exists at {i}. Addresses should not collide.");
+                    Assert.Fail($"A hash collision exists at ({typeof(T).Name}){i}. Addresses should not collide.");
 
             }
         }
 
         /// <summary>
-        /// Runs all expected tests for the given backing type
+        /// Runs iterative and max value tests for the expected range of default int16 to int128)
         /// </summary>
         /// <param name="t"></param>
         [TestMethod]
         [DynamicData("TestTypes")]
-        public void Test_Address(Type t)
+        public void Test_PrimitiveAddressHashing(Type t)
         {
 
             Assert.IsTrue(t.IsValueType, $"TEST ERROR: The type {t} is not a value type and cannot be used for addressing.");
-
             // Get the methods
             var m = GetType().GetMethod("TestMaxValue", BindingFlags.Instance | BindingFlags.Public);
-            Assert.IsNotNull(m, "Test failed to retrieve internal procedure 'TestMaxValue'");
+            Assert.IsNotNull(m, "TEST ERROR: Test failed to retrieve internal procedure 'TestMaxValue'");
             m = m.MakeGenericMethod(t); //genericize to the type
-            Assert.IsNotNull(m, $"Test failed to genericize procecure 'TestMaxValue' to {t}");
+            Assert.IsNotNull(m, $"TEST ERROR: Test failed to genericize procecure 'TestMaxValue' to {t}");
             // Now invoke
             m.Invoke(this, null);
 
             // And again with the iterative test
             m = GetType().GetMethod("TestIteratively", BindingFlags.Instance | BindingFlags.Public);
-            Assert.IsNotNull(m, "Test failed to retrieve internal procedure 'TestIteratively'");
+            Assert.IsNotNull(m, "TEST ERROR: Test failed to retrieve internal procedure 'TestIteratively'");
             m = m.MakeGenericMethod(t);
-            Assert.IsNotNull(m, $"Test failed to genericize procecure 'TestIteratively' to {t}");
+            Assert.IsNotNull(m, $"TEST ERROR: Test failed to genericize procecure 'TestIteratively' to {t}");
 
         }
 
-
+        /// <summary>
+        /// Tests concurrency/thread-safety for the internal get/set allocator by generating a large number of addresses on many threads concurrently
+        /// </summary>
         [TestMethod]
         public void Test_Address_ConcurrentSafety()
         {
             //create a new provider
             IAddressProvider<long> provider = new AddressProvider<long>();
 
+            // make sure it has no allocations yet
+            Assert.AreEqual(provider.GetTotalAllocated(), 0);
 
             // Configure environment variables
-            int iterations = 30_000; //loops to run on each thread
-            int threads = 8; //total threads
-            int counters = threads; //debug counter
-            bool stable = true; //flag for test stability
-            Exception? failure = null; //ensure catchability of internal thrown exceptions outside of loop
+            int iterations = 1_000_000; //loops to run on each thread
+            int threads = Environment.ProcessorCount; // saturate
+            ManualResetEvent signal = new(false);
 
-
-            // Cache some stuff
-            int byteSize = sizeof(long);
-            Assert.AreEqual(byteSize, Address<long>.ByteSize, "Critical error calculating size of address data!!!");
-
-            // Collection pool for hashes... painnn
-            // Unnecessary extra effort option: one hashset per thread and combine afterwards
-            ConcurrentDictionary<string, int> flags = new ConcurrentDictionary<string, int>(threads, iterations);
-
-            Task[] tasks = new Task[threads];
-            for (int i = 0; i < threads; i++)
+            try
             {
-                tasks[i] = Task.Run(() =>
+                // Cache some stuff
+                int byteSize = sizeof(long);
+                Assert.AreEqual(
+                    byteSize, Address<long>.ByteSize,
+                    $"Critical error calculating size of address data! This should DEFINITELY not happen.");
+
+                // Create a list of accumulators
+                int[] accumulator = [0];
+                Task<Exception?>[] tasks = new Task<Exception?>[threads];
+
+                for (int i = 0; i < threads; i++)
                 {
-                    uint lastIndex = 0;
-                    try
-                    {
-                        for (int i = 0; stable && i < iterations; i++)
-                        {
-                            var testAddress = provider.Get(out lastIndex);
-                            string text = testAddress.Text;
-                            // Verify length of address/text form
-                            Assert.AreEqual(text.Length, testAddress.Size, $"The hash for {i} produces {testAddress.Text.Length} characters, {testAddress.Size} expected");
+                    tasks[i] = RunConcurrentGenerator(provider, i, iterations, accumulator, signal);
+                }
+                // All threads ready, allow them to start
+                signal.Set();
 
+                // Wait and validate everything
+                if(!Task.WaitAll(tasks, TimeSpan.FromSeconds(15)))
+                {
+                    Assert.Fail("Test Timeout! Potential deadlock or infinite loop.");
+                }
 
-                            // Verify uniqueness of address
-                            if (!flags.TryAdd(text, i))
-                            {
-                                Assert.Fail($"A hash collision exists. Addresses should not collide.");
-                            }
-                        }
-                    }
-                    catch (Exception e)
+                foreach(var t in tasks)
+                {
+                    if(t.Exception != null || t.Result != null)
                     {
-                        // Safely set the first exception that was thrown
-                        bool state = Interlocked.CompareExchange(ref stable, true, false);
-                        if (!state) failure = new Exception($"Failure occurred at index {lastIndex}", e);
+                        var e = t.Result ?? t.Exception;
+                        Assert.Fail(
+                            $"Thread {Array.IndexOf(tasks, t)} failed with exception: {e?.Message ?? "Unknown error"}."
+                        );
                     }
-                    finally
-                    {
-                        Interlocked.Decrement(ref counters);
-                    }
-                });
+                }
+
+                //Now we can instead just check the total allocation count of the provider
+                Assert.AreEqual(accumulator[0], iterations * threads,
+                    "TEST ERROR: Incorrect total iterations performed by test configuration");
+
+                //Now we can instead just check the total allocation count of the provider
+                Assert.AreEqual(iterations * threads, provider.GetTotalAllocated(),
+                    "Mismatched allocation. The same address has been allocated twice.");
+
             }
-
-            // Wait and validate everything
-            Task.WaitAll(tasks);
-            Assert.AreEqual(counters, 0, "TEST FAIL: counters not correctly reset");
-            Assert.AreEqual(flags.Count, iterations * threads, $"A hash collision exists. Addresses should not collide.");
-            Assert.IsTrue(stable, $"A failure state occured while performing concurrent tests. Exception: {failure ?? null}");
+            finally
+            {
+                signal.Dispose();
+            }
         }
 
+        /// <summary>
+        /// Generates a threaded test task that runs the address generator the given number of times
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="provider">The provider instance being tested</param>
+        /// <param name="threadIndex">Index of this generator</param>
+        /// <param name="accumulator">Accumulator array to count operations</param>
+        /// <param name="signal">Optional signal to synchronize all threads</param>
+        /// <returns></returns>
+        Task<Exception?> RunConcurrentGenerator<T>(IAddressProvider<T> provider, int threadIndex, int iterations, int[] accumulator, ManualResetEvent? signal = null) where T : struct
+        {
+            return Task.Run(() =>
+            {
+                // Wait if requested
+                signal?.WaitOne();
+                uint lastIndex = 0;
+                try
+                {
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        var testAddress = provider.Get(out lastIndex);
+                        string text = testAddress.Text;
+                        // Verify length of address/text form
+                        Assert.AreEqual(
+                            text.Length, testAddress.Size,
+                            $"The hash for {i} produces incorrect output length.");
+
+                        // Verify uniqueness of address
+                        Interlocked.Increment(ref accumulator[0]);
+                    }
+                    return null;
+                }
+                catch (Exception e)
+                {
+                    return new Exception($"Failure at index {lastIndex}: {e.Message}", e);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Performs a large number of iterations with the given provider
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="provider"></param>
+        /// <returns></returns>
+        int Iterate<T>(IAddressProvider<T> provider) where T : struct
+        {
+            for (int j = 0; j < 100_000; ++j) provider.Get();
+            return 100_000;
+        }
+
+        /// <summary>
+        /// Converts a nanosecond time into a nice readable ns/us/ms abbreviation
+        /// </summary>
+        /// <param name="val"></param>
+        /// <returns></returns>
+        string Unitify(double val)
+        {
+            string[] nominators = ["ns", "us", "ms"];
+            int magnitude = (int)Math.Log10(val) / 3;
+            magnitude = int.Min(2, magnitude);
+            //logify
+            val /= Math.Pow(10, magnitude * 3);
+            return $"{Math.Round(val * 100) / 100d}{nominators[magnitude]}";
+        }
     }
 }
