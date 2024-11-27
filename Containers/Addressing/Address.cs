@@ -16,12 +16,7 @@ namespace Containers.Addressing
     /// An address represented by the given struct <typeparamref name="T"/> where T dictates
     /// the binary backing data for the address.
     /// 
-    /// <para>The address is internally coded in base64->ASCII providing sizeof(<typeparamref name="T"/>)*5 bits, meaning;</para>
-    /// <list type="bullet">
-    /// <item><see cref="short"/> - 10 bit (2 characters)</item>
-    /// <item><see cref="int"/> - 20 bits (4 characters)</item>
-    /// <item><see cref="long"/> - 40 bits (8 characters)</item>
-    /// </list>
+    /// <para>The address is encoded 1:1 into an ASCII readable mapping matching sizeof(T) using the specified encoder.</para> 
     /// <para>It is recommended not to use single-byte primitives in this instance.</para>
     /// </summary>
     /// <typeparam name="T"></typeparam>
