@@ -6,28 +6,30 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
-using static Tests.Emission.TestSignatureMapping;
+using static System.Net.Mime.MediaTypeNames;
+using static Tests.Emission.ParameterHelperTesting;
 
 namespace Tests.Emission
 {
     [TestClass]
-    public class TestSignatureMapping
+    public class ParameterHelperTesting
     {
 
         delegate int SampleDelegate(double first, StringBuilder second);
 
         /// <summary>
-        /// Tests <see cref="Explorer.GetDelegateSignature(Type)"/>
+        /// Tests <see cref="ParameterHelper.GetDelegateSignature(Type)"/>
         /// </summary>
         [TestMethod]
-        public void Test_GetDelegateSignature()
+        public void GetDelegateSignature_ReturnsCorrectSignature()
         {
             var t = typeof(SampleDelegate);
 
-            var result = Explorer.GetDelegateSignature(t);
+            var result = ParameterHelper.GetDelegateSignature(t);
 
             Assert.AreEqual(result.returnType, typeof(int), "The return parameter was not correctly retrieved");
             Assert.AreEqual(result.parameterTypes[0], typeof(double), "The method signature was not correctly retrieved");
@@ -37,14 +39,14 @@ namespace Tests.Emission
 
 
         /// <summary>
-        /// Validates <see cref="Explorer.MapTypeArrays(Type[], Type[])"/> for basic input arrays.
+        /// Validates <see cref="ParameterHelper.MapTypeArrays(Type[], Type[])"/> for basic input arrays.
         /// </summary>
         [TestMethod]
-        public void Test_AlikeTypeMatching()
+        public void MapTypeArrays_AlikeTypeMatching()
         {
             var inputs = new Type[] { typeof(SampleClass), typeof(int), typeof(object) };
             var outputs = new Type[] { typeof(int), typeof(object), typeof(SampleClass) };
-            var mappings = Explorer.MapTypeArrays(inputs, outputs);
+            var mappings = ParameterHelper.MapTypeArrays(inputs, outputs);
             foreach(var m in mappings)
             {
                 Assert.AreEqual(inputs[m.src], outputs[m.dst],
@@ -54,15 +56,15 @@ namespace Tests.Emission
 
 
         /// <summary>
-        /// Validates <see cref="Explorer.MapTypeArrays(Type[], Type[])"/> for basic input arrays.
+        /// Validates <see cref="ParameterHelper.MapTypeArrays(Type[], Type[])"/> for basic input arrays.
         /// </summary>
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
-        public void Test_InvalidSignature()
+        public void MapTypeArrays_InvalidInputTypes()
         {
             var inputs = new Type[] { typeof(SampleClass), typeof(int), typeof(object), typeof(object) };
             var outputs = new Type[] { typeof(int), typeof(object), typeof(object), typeof(SampleClass) };
-            var mappings = Explorer.MapTypeArrays(inputs, outputs);
+            var mappings = ParameterHelper.MapTypeArrays(inputs, outputs);
         }
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -70,35 +72,35 @@ namespace Tests.Emission
         /// <summary> Ensures exceptions for null output array </summary>
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
-        public void Test_NullInput()
+        public void MapTypeArrays_NullInput()
         {
-            var mappings = Explorer.MapTypeArrays(null, []);
+            var mappings = ParameterHelper.MapTypeArrays(null, []);
         }
 
         /// <summary> Ensures exceptions for null output array </summary>
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
-        public void Test_NullOutput()
+        public void MapTypeArrays_NullOutput()
         {
-            var mappings = Explorer.MapTypeArrays([], null);
+            var mappings = ParameterHelper.MapTypeArrays([], null);
         }
 
         /// <summary> Ensures exceptions for null input parameter </summary>
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
-        public void Test_InputContainsNull()
+        public void MapTypeArrays_InputContainsNull()
         {
             var inputs = new Type[] { typeof(SampleClass), null, typeof(object) };
-            var mappings = Explorer.MapTypeArrays(inputs, []);
+            var mappings = ParameterHelper.MapTypeArrays(inputs, []);
         }
 
         /// <summary> Ensures exceptions for null output parameter </summary>
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
-        public void Test_OutputsContainsNull()
+        public void MapTypeArrays_OutputContainsNull()
         {
             var outputs = new Type[] { typeof(SampleClass), null, typeof(object) };
-            var mappings = Explorer.MapTypeArrays([], outputs);
+            var mappings = ParameterHelper.MapTypeArrays([], outputs);
         }
 
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -137,20 +139,40 @@ namespace Tests.Emission
             };
         }
 
+        [TestMethod]
+        public void GenerateSignatureMappings_ReturnsCorrectMapping()
+        {
+            //get the sample method handle
+            var method = typeof(ParameterHelperTesting).GetMethod("SampleMethod", BindingFlags.Public | BindingFlags.Instance);
+            Assert.IsNotNull(method, "TEST ERROR: Coult not find sample method for testing");
+            var mappings = ParameterHelper.GenerateSignatureMappings(typeof(Router.EndpointCallback), method);
+
+            //and get the types
+            var inputTypes = ParameterHelper.GetDelegateSignature(typeof(Router.EndpointCallback)).parameterTypes;
+            var outputTypes = ParameterHelper.GetDelegateSignature(SampleMethod).parameterTypes;
+
+            foreach (var m in mappings)
+            {
+                Assert.IsTrue(ParameterHelper.CheckTypeCompabitility(inputTypes[m.src], outputTypes[m.dst]));
+            }
+        }
+
+        public void SampleMethod(object data, Signal s, Model sender) { }
+
 
         /// <summary>
-        /// Tests <see cref="Explorer.MapTypeArrays(Type[], Type[])"/> for core delegate <see cref="Router.EndpointCallback"/>
+        /// Tests <see cref="ParameterHelper.MapTypeArrays(Type[], Type[])"/> for core delegate <see cref="Router.EndpointCallback"/>
         /// </summary>
         [TestMethod]
-        public void Test_MapEndpointCallback()
+        public void EndpointCallback_CorrectlyMapped()
         {
             // Use the actual router callback delegate
-            var inputTypes = Explorer.GetDelegateSignature(typeof(Router.EndpointCallback)).parameterTypes;
+            var inputTypes = ParameterHelper.GetDelegateSignature(typeof(Router.EndpointCallback)).parameterTypes;
 
             var tests = TestParameters.GetItems();
             foreach (var testItem in tests)
             {
-                var mappings = Explorer.MapTypeArrays(inputTypes, testItem.Values);
+                var mappings = ParameterHelper.MapTypeArrays(inputTypes, testItem.Values);
 
                 // ensure correct count
                 Assert.AreEqual(mappings.Count, testItem.Values.Length, 
@@ -178,7 +200,7 @@ namespace Tests.Emission
                     Assert.IsTrue(
                         // Either the types match (e.g Entry is Model and Target inherits Model)
                         // Or the target is an object parameter
-                        Explorer.CheckTypeCompabitility(inputTypes[mappings[i].src], testItem.Values[mappings[i].dst]),
+                        ParameterHelper.CheckTypeCompabitility(inputTypes[mappings[i].src], testItem.Values[mappings[i].dst]),
                         // .
                         $"Mapping for {testItem.Name} provides incompatible types for argument {i}. " +
                         $"Expect: <{inputTypes[mappings[i].src]}>, Got: <{testItem.Values[mappings[i].dst]}>. " +

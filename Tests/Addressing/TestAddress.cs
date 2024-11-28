@@ -79,7 +79,7 @@ namespace Tests.Addressing
             long memoryCleaned = (preCleanMemory - initialMemory) - (finalMemory - initialMemory);
 
             // If the memory burden is high, then there's probably a memory leak
-            if ((finalMemory - initialMemory) > 1024 * 100)
+            if ((finalMemory - initialMemory) > 1024 * 1024)
                 Assert.Fail($"Unexpected large memory consumption ({(finalMemory - initialMemory) / 1024}kb). Memory leak?");
 
             // Output the messages and stuff

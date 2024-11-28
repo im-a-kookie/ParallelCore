@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Containers.Threading
+namespace Tests.Signals
 {
-    public abstract class Container
+    internal class TestRouter
     {
     }
 }

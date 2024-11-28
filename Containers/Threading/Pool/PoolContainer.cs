@@ -4,9 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Containers.Threading
+namespace Containers.Threading.Pool
 {
-    abstract class ParallelProvider
+    public class PoolContainer : Container
     {
+
+        public int queuedState = 0;
+
+
+
+
+
+
+
     }
 }
