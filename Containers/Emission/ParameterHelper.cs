@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 namespace Containers.Emission
 {
     /// <summary>
-    /// Explores the given class and detects members that match the conditions
+    /// Helper class that provides useful methods for investigating the parameters of methods.
     /// </summary>
-    public class Explorer
+    public partial class ParameterHelper
     {
 
         /// <summary>
@@ -21,9 +21,9 @@ namespace Containers.Emission
         {
             public readonly int src;
             public readonly int dst;
-            public Mapping(int entry, int target)
+            public Mapping(int source, int destination)
             {
-                this.src = entry; this.dst = target;
+                this.src = source; this.dst = destination;
             }
         }
 
@@ -241,6 +241,18 @@ namespace Containers.Emission
 
 
         /// <summary>
+        /// Gets the signature of a delegate from the given delegate
+        /// </summary>
+        /// <param name="delegateType"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static (Type returnType, Type[] parameterTypes) GetDelegateSignature(Delegate delegateType)
+        {
+            return GetDelegateSignature(delegateType.GetType());
+        }
+
+        /// <summary>
         /// The return type of the delegate
         /// </summary>
         static Type? _returnType;
@@ -284,26 +296,6 @@ namespace Containers.Emission
 
         }
 
-
-        /// <summary>
-        /// Generates a list of mappings that relate the parameters of the entry delegate, to an array of parameters
-        /// that can be provided directly to a method or function delegate (target)
-        /// </summary>
-        /// <param name="entryPoint"></param>
-        /// <param name="target"></param>
-        /// <returns></returns>
-        /// <remarks>
-        /// Algorithm details are provided in <see cref="MapTypeArrays(Type[], Type[])"/>
-        /// </remarks>
-        public static List<Mapping> GenerateSignatureMappings(Type entryPoint, MethodInfo target)
-        {
-            // get the types from the input things
-            var inputParams = GetDelegateSignature(entryPoint).parameterTypes;
-            var outputParams = target.GetParameters().Select(x => x.ParameterType).ToArray(); 
-            //and bonk
-            return MapTypeArrays(inputParams, outputParams);
-        }
-
         /// <summary>
         /// Generates a list of parameter mappings, ordered according to target parameter order (for LdArgS->Call).
         /// 
@@ -344,13 +336,6 @@ namespace Containers.Emission
 
             // Handle unmapped outputs
             FillUnmappedOutputs(context);
-
-            // Debug output
-            foreach (var k in context.Mappings)
-            {
-                string str = k.Value < 0 ? "Null" : entryParameters[k.Value].ToString();
-                Logger.Default.Info($"Map: {k.Key}:{k.Value},   {str}:{targetParameters[k.Key]}");
-            }
 
             // Build the resulting mapping
             return context.ComputeSortedMapping();
@@ -479,6 +464,105 @@ namespace Containers.Emission
                     context.Map(o, -1);
                 }
             }
+        }
+
+
+
+        /// <summary>
+        /// Generates a list of mappings that relate the parameters of the entry delegate, to an array of parameters
+        /// that can be provided directly to a method or function delegate (target)
+        /// </summary>
+        /// <param name="entryPoint"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// Algorithm details are provided in <see cref="MapTypeArrays(Type[], Type[])"/>
+        /// </remarks>
+        public static List<Mapping> GenerateSignatureMappings(Type entryPoint, MethodInfo target)
+        {
+            // get the types from the input things
+            var inputParams = GetDelegateSignature(entryPoint).parameterTypes;
+            var outputParams = target.GetParameters().Select(x => x.ParameterType).ToArray();
+            //and bonk
+            return MapTypeArrays(inputParams, outputParams);
+        }
+
+        /// <summary>
+        /// Generates a list of mappings that relate the parameters of the entry delegate, to an array of parameters
+        /// that can be provided directly to a method or function delegate (target)
+        /// </summary>
+        /// <param name="entryPoint"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// Algorithm details are provided in <see cref="MapTypeArrays(Type[], Type[])"/>
+        /// </remarks>
+        public static List<Mapping> GenerateSignatureMappings(Type entryPoint, Delegate target)
+        {
+            // get the types from the input things
+            var inputParams = GetDelegateSignature(entryPoint).parameterTypes;
+            var outputParams = GetDelegateSignature(target).parameterTypes;
+            //and bonk
+            return MapTypeArrays(inputParams, outputParams);
+        }
+
+
+        /// <summary>
+        /// Generates a list of mappings that relate the parameters of the entry delegate, to an array of parameters
+        /// that can be provided directly to a method or function delegate (target)
+        /// </summary>
+        /// <param name="entryPoint"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// Algorithm details are provided in <see cref="MapTypeArrays(Type[], Type[])"/>
+        /// </remarks>
+        public static List<Mapping> GenerateSignatureMappings(Delegate entryPoint, Delegate target)
+        {
+            // get the types from the input things
+            var inputParams = GetDelegateSignature(entryPoint).parameterTypes;
+            var outputParams = GetDelegateSignature(target).parameterTypes;
+            //and bonk
+            return MapTypeArrays(inputParams, outputParams);
+        }
+
+
+        /// <summary>
+        /// Generates a list of mappings that relate the parameters of the entry delegate, to an array of parameters
+        /// that can be provided directly to a method or function delegate (target)
+        /// </summary>
+        /// <param name="entryPoint"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// Algorithm details are provided in <see cref="MapTypeArrays(Type[], Type[])"/>
+        /// </remarks>
+        public static List<Mapping> GenerateSignatureMappings(Delegate entryPoint, MethodInfo target)
+        {
+            // get the types from the input things
+            var inputParams = GetDelegateSignature(entryPoint).parameterTypes;
+            var outputParams = target.GetParameters().Select(x => x.ParameterType).ToArray();
+            //and bonk
+            return MapTypeArrays(inputParams, outputParams);
+        }
+
+        /// <summary>
+        /// Generates a list of mappings that relate the parameters of the entry delegate, to an array of parameters
+        /// that can be provided directly to a method or function delegate (target)
+        /// </summary>
+        /// <param name="entryPoint"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// Algorithm details are provided in <see cref="MapTypeArrays(Type[], Type[])"/>
+        /// </remarks>
+        public static List<Mapping> GenerateSignatureMappings(MethodInfo entryPoint, MethodInfo target)
+        {
+            // get the types from the input things
+            var inputParams = entryPoint.GetParameters().Select(x => x.ParameterType).ToArray();
+            var outputParams = target.GetParameters().Select(x => x.ParameterType).ToArray();
+            //and bonk
+            return MapTypeArrays(inputParams, outputParams);
         }
 
 
