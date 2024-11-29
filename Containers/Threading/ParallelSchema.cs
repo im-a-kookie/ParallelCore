@@ -1,9 +1,4 @@
 ﻿using Containers.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Containers.Threading
 {
@@ -31,7 +26,7 @@ namespace Containers.Threading
         /// <exception cref="InvalidOperationException"></exception>
         internal virtual void _Start(Provider provider)
         {
-            lock(_lock)
+            lock (_lock)
             {
                 if (Started)
                     throw new InvalidOperationException($"This parallel scheme has already been started.");

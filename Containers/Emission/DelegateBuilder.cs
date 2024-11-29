@@ -1,23 +1,12 @@
 ﻿using Containers.Models;
 using Containers.Signals;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using System.Xml.Serialization;
 using static Containers.Emission.ParameterHelper;
 
 namespace Containers.Emission
-{ 
-
-
-
-
+{
     /// <summary>
     /// Uses ILGenerator to construct delegates that efficiently map method signatures to callbacks
     /// without the need for complicated runtime DynamicInvoke logic.
@@ -41,7 +30,7 @@ namespace Containers.Emission
             /// <summary>
             /// The calling object, or null (expects null if IsStatic)
             /// </summary>
-            public Model? Caller {  get; private set; }
+            public Model? Caller { get; private set; }
 
             /// <summary>
             /// The return type of the entry delegate
@@ -62,7 +51,7 @@ namespace Containers.Emission
             /// The parameter types of the target method
             /// </summary>
             public Type[] TargetParams { get; private set; }
-            
+
             /// <summary>
             /// The parameter mappings between entry and target parameters
             /// </summary>
@@ -82,7 +71,7 @@ namespace Containers.Emission
             public BuilderContext(Model? caller, MethodInfo target)
             {
 
-                if(!typeof(T).IsSubclassOf(typeof(Delegate)))
+                if (!typeof(T).IsSubclassOf(typeof(Delegate)))
                 {
                     throw new ArgumentException("The provided type must be a Delegate!");
                 }
@@ -204,7 +193,7 @@ namespace Containers.Emission
                         skipVisibility: true
                         );
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     throw new InvalidOperationException($"An error {e} was thrown during dynamic method creation!", e);
                 }
@@ -241,7 +230,7 @@ namespace Containers.Emission
             }
         }
 
- 
+
 
         /// <summary>
         /// Generates an EndpointCallback delegate which will invoke the target method
@@ -313,9 +302,9 @@ namespace Containers.Emission
         {
             // If we do not have a return type from the delegate
             // Then we need to clear the stack from any target calls
-            if(context.EntryReturn == typeof(void))
+            if (context.EntryReturn == typeof(void))
             {
-                if(context.TargetReturn != typeof(void))
+                if (context.TargetReturn != typeof(void))
                 {
                     il.Emit(OpCodes.Pop); //bonk
                 }
@@ -420,7 +409,7 @@ namespace Containers.Emission
         private static void HandleNullableValueType(ILGenerator il, Type underlyingType, int srcIndex)
         {
 
-            if(!underlyingType.IsPrimitive)
+            if (!underlyingType.IsPrimitive)
             {
                 // This case is simple
                 var nullableType = typeof(Nullable<>).MakeGenericType(underlyingType);
@@ -449,9 +438,9 @@ namespace Containers.Emission
                 il.Emit(OpCodes.Unbox_Any, underlyingType); // Unbox the nullable type
             }
 
-           
+
         }
- 
+
         /// <summary>
         /// Gets an opcode for a zero value for a primitive type 
         /// </summary>
@@ -459,7 +448,7 @@ namespace Containers.Emission
         /// <returns></returns>
         public static OpCode GetZeroForPrimitive(Type type)
         {
-           
+
             OpCode code = OpCodes.Ldc_I4_0; // Default for most types (int, bool, etc.)
             if (type == typeof(float))
                 code = OpCodes.Ldc_R4; // Default value for float
@@ -467,7 +456,7 @@ namespace Containers.Emission
                 code = OpCodes.Ldc_R8; // Default value for double
             return code;
         }
-           
+
 
         /// <summary>
         /// Creates a null or zero/default OpCode for the given target type.
@@ -487,7 +476,7 @@ namespace Containers.Emission
                 {
                     il.Emit(GetZeroForPrimitive(targetType));
                     if (underlyingType != null) il.Emit(OpCodes.Unbox_Any, underlyingType); // Emit the unboxing
-                    
+
                 }
                 else
                 {
@@ -500,10 +489,10 @@ namespace Containers.Emission
 
                     // Nullable requires the struct to be boxed into a Nullable<T>
                     if (underlyingType != null)
-                    {          
+                    {
                         // So we should get the constructor for Nullable<T> and instantiate it yay
                         var nullableType = typeof(Nullable<>).MakeGenericType(underlyingType);
-                        var nullConstructor = nullableType.GetConstructor( [underlyingType ])!;
+                        var nullConstructor = nullableType.GetConstructor([underlyingType])!;
                         il.Emit(OpCodes.Newobj, nullConstructor); // And make it
 
                     }

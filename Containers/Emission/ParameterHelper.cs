@@ -1,10 +1,5 @@
 ﻿using Containers.Signals;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Containers.Emission
 {
@@ -143,7 +138,7 @@ namespace Containers.Emission
                     throw new ArgumentOutOfRangeException(
                         "The index of the input is not valid for the parameter array");
 
-                if(o < 0 || o >= TargetParameters.Length)
+                if (o < 0 || o >= TargetParameters.Length)
                     throw new ArgumentOutOfRangeException(
                         "The output index must fall within the output parameter array!");
 
@@ -153,7 +148,7 @@ namespace Containers.Emission
 
                 // Now we can fill it
                 Mappings.TryAdd(o, i);
-                if(i >= 0) SolvedEntries[i] = true; //already checked i>len
+                if (i >= 0) SolvedEntries[i] = true; //already checked i>len
                 SolvedTargets[o] = true;
             }
 
@@ -163,7 +158,7 @@ namespace Containers.Emission
             /// <returns>A sorted result of mapping structs</returns>
             public List<Mapping> ComputeSortedMapping(bool nullifyEmptyOutputs = true)
             {
-                for(int o = 0; o < TargetParameters.Length; ++o)
+                for (int o = 0; o < TargetParameters.Length; ++o)
                 {
                     if (!SolvedTargets[o])
                     {
@@ -268,7 +263,7 @@ namespace Containers.Emission
         public static Type[] GetDelegateInputs()
         {
             // Validate cache
-            if(_cachedTypes == null || _returnType == null)
+            if (_cachedTypes == null || _returnType == null)
             {
                 var types = GetDelegateSignature(typeof(Router.EndpointCallback));
                 // And store
@@ -283,7 +278,7 @@ namespace Containers.Emission
         /// </summary>
         /// <returns></returns>
         public static Type GetDelegateReturn()
-        {            
+        {
             // Validate cache
             if (_cachedTypes == null || _returnType == null)
             {

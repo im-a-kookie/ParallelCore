@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Containers.Models.Attributes
+﻿namespace Containers.Models.Attributes
 {
     [AttributeUsage(AttributeTargets.Method)]
     public class Endpoint : Attribute
@@ -16,7 +10,7 @@ namespace Containers.Models.Attributes
         /// <summary>
         /// Whether to register using the method name when an alias is provided (in which case BOTH will work).
         /// </summary>
-        public bool UseMethodName {  get; private set; }
+        public bool UseMethodName { get; private set; }
         public Endpoint()
         {
         }

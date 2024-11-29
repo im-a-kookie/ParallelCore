@@ -1,10 +1,5 @@
 ﻿using Containers.Signals;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Tests.Signals
 {
@@ -83,11 +78,11 @@ namespace Tests.Signals
             short value = -5;
             Header header = new Header(value, false);
         }
-        
+
         [TestMethod]
         public void Header_SignedConstructorSetsCorrectly()
         {
-            short value = 123; 
+            short value = 123;
             bool flag = true;
             Header header = new Header(value, flag);
             Assert.AreEqual((ushort)value, header.ID, "The ID property should be set correctly when using the short constructor.");

@@ -1,11 +1,8 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Containers;
-using Containers.Addressing;
 using Containers.Emission;
 using Containers.Models;
-using Containers.Signals;
 using System.Reflection;
-using System.Text;
 
 
 
@@ -63,7 +60,7 @@ public class TestyThing : Model
 
     }
 
-    public static Datas?  TestCall(TestyThing? me, Datas? x, Datas? y)
+    public static Datas? TestCall(TestyThing? me, Datas? x, Datas? y)
     {
         return new() { data = 10 };
     }

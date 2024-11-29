@@ -1,11 +1,5 @@
-﻿using Containers.Addressing;
-using Containers.Models.Attributes;
+﻿using Containers.Models.Attributes;
 using Containers.Signals;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Containers.Models
 {
@@ -26,7 +20,7 @@ namespace Containers.Models
         {
         }
 
- 
+
         public void NotifyChanges() { }
         public void NotifyReceiveMessage() { }
 

@@ -1,11 +1,5 @@
 ﻿using Containers.Signals;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Containers.Models
 {
@@ -49,9 +43,9 @@ namespace Containers.Models
             }
             finally
             {
-                if(_lock.IsReadLockHeld) _lock.ExitReadLock();
+                if (_lock.IsReadLockHeld) _lock.ExitReadLock();
             }
-            
+
         }
 
         public void SetMaxSize(int size)

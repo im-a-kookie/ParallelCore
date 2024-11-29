@@ -1,8 +1,5 @@
 ﻿using Containers.Logging;
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Reflection.Metadata.Ecma335;
 
 public enum LogLevel
 {
@@ -28,24 +25,24 @@ public class Logger
         _logLevel = logLevel;
 
         // We were not given a writer, so add the console
-        if(writer  == null)
+        if (writer == null)
         {
             _writers.Add(Console.Out);
         }
         else
         {
-            _writers.AddRange(writer.Where(x => x!= null));
+            _writers.AddRange(writer.Where(x => x != null));
         }
 
         // Determine if we should debug
-        if(Debugger.IsLogging())
+        if (Debugger.IsLogging())
         {
             ShouldDebug = true;
         }
 
         // append a new writer
-        if(logFilePath != null) _writers.Add(GetFileWriter(logFilePath));
-        
+        if (logFilePath != null) _writers.Add(GetFileWriter(logFilePath));
+
 
 
     }
@@ -66,7 +63,7 @@ public class Logger
             string h = Header + $"[{level}]: ";
             string logMessage = $"{h}{message}";
             //print to all attached text writers
-            foreach(TextWriter writer in _writers)
+            foreach (TextWriter writer in _writers)
             {
                 writer?.WriteLine(logMessage);
             }
@@ -130,7 +127,7 @@ public class Logger
         foreach (TextWriter writer in _writers)
         {
             writer?.WriteLine(logHeader);
-            foreach(var line in lines) writer?.WriteLine($"{gap}* {line}");
+            foreach (var line in lines) writer?.WriteLine($"{gap}* {line}");
         }
 
         if (ShouldDebug)

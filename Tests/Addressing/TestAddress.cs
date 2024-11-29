@@ -1,16 +1,6 @@
-﻿using Containers;
-using Containers.Addressing;
-using System;
-using System.Buffers;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using Containers.Addressing;
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Tests.Addressing
 {
@@ -62,7 +52,7 @@ namespace Tests.Addressing
             // Warmup
             IAddressProvider<long> provider = new AddressProvider<long>();
             Iterate(provider);
-            
+
             long initialMemory = GC.GetTotalMemory(true); //clean 
             Stopwatch s = Stopwatch.StartNew(); //start after clean
             int total = 0;
@@ -85,7 +75,7 @@ namespace Tests.Addressing
             // Output the messages and stuff
             TestContext?.WriteLine($"Average Hash Time:   {Unitify(elapsed)}");
             TestContext?.WriteLine($"Uncollected Memory:  {finalMemory - initialMemory}b");
-            TestContext?.WriteLine($"Collected Memory:    {memoryCleaned/1024}kb");
+            TestContext?.WriteLine($"Collected Memory:    {memoryCleaned / 1024}kb");
 
         }
 
@@ -118,7 +108,7 @@ namespace Tests.Addressing
             tooLargeValue[Address<T>.BitDensity / 8] |= (byte)(1 << Address<T>.BitDensity % 8);
 
             // Now test the overshot value
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => 
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
                 Address<T>.HashToBits(Address<T>.FromByteArray(tooLargeValue))
             );
 
@@ -146,7 +136,7 @@ namespace Tests.Addressing
                 // Check the text is valid in length/mapping
                 string text = testAddress.Text;
                 Assert.AreEqual(text.Length, testAddress.Size, $"The hash for ({typeof(T).Name}){i} is of incorrect length!");
-              
+
                 // Check the text is not a hash collision
                 if (!included.Add(text))
                     Assert.Fail($"A hash collision exists at ({typeof(T).Name}){i}. Addresses should not collide.");
@@ -217,14 +207,14 @@ namespace Tests.Addressing
                 signal.Set();
 
                 // Wait and validate everything
-                if(!Task.WaitAll(tasks, TimeSpan.FromSeconds(15)))
+                if (!Task.WaitAll(tasks, TimeSpan.FromSeconds(15)))
                 {
                     Assert.Fail("Test Timeout! Potential deadlock or infinite loop.");
                 }
 
-                foreach(var t in tasks)
+                foreach (var t in tasks)
                 {
-                    if(t.Exception != null || t.Result != null)
+                    if (t.Exception != null || t.Result != null)
                     {
                         var e = t.Result ?? t.Exception;
                         Assert.Fail(

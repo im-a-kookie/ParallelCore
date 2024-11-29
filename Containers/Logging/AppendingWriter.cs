@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
 namespace Containers.Logging
 {
@@ -14,9 +10,9 @@ namespace Containers.Logging
         {
             _filePath = filePath;
 
-           //validate the path
+            //validate the path
             File.AppendAllText(filePath, "");
-            if(!File.Exists(filePath))
+            if (!File.Exists(filePath))
             {
                 throw new FileNotFoundException($"The log file {filePath} could not be generated!");
             }

@@ -1,12 +1,4 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Containers.Signals
+﻿namespace Containers.Signals
 {
     public struct Header
     {
@@ -18,9 +10,11 @@ namespace Containers.Signals
         /// <summary>
         /// Gets the header ID out of this struct
         /// </summary>
-        public ushort ID {
+        public ushort ID
+        {
             get => (ushort)(id & 0x7F);
-            set{
+            set
+            {
                 id = value;
             }
         }

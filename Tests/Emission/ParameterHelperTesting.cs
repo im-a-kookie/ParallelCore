@@ -1,17 +1,9 @@
 ﻿using Containers.Emission;
 using Containers.Models;
 using Containers.Signals;
-using Microsoft.Testing.Platform.Extensions.Messages;
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
-using static Tests.Emission.ParameterHelperTesting;
 
 namespace Tests.Emission
 {
@@ -47,7 +39,7 @@ namespace Tests.Emission
             var inputs = new Type[] { typeof(SampleClass), typeof(int), typeof(object) };
             var outputs = new Type[] { typeof(int), typeof(object), typeof(SampleClass) };
             var mappings = ParameterHelper.MapTypeArrays(inputs, outputs);
-            foreach(var m in mappings)
+            foreach (var m in mappings)
             {
                 Assert.AreEqual(inputs[m.src], outputs[m.dst],
                     $"Type Mapping failed to match parameters for {m.src}=>{m.dst}");
@@ -175,11 +167,11 @@ namespace Tests.Emission
                 var mappings = ParameterHelper.MapTypeArrays(inputTypes, testItem.Values);
 
                 // ensure correct count
-                Assert.AreEqual(mappings.Count, testItem.Values.Length, 
+                Assert.AreEqual(mappings.Count, testItem.Values.Length,
                     $"Mapping for {testItem.Name} provides incorrect output arguments!");
-                
+
                 // Ensure progressive sorting
-                for(int i = 0; i < mappings.Count; ++i)
+                for (int i = 0; i < mappings.Count; ++i)
                 {
                     Assert.AreEqual(i, mappings[i].dst,
                         $"Mapping for {testItem.Name} is incorrectly sorted. " +
@@ -208,7 +200,7 @@ namespace Tests.Emission
                 }
 
                 // validate null counting from the loop above
-                Assert.AreEqual(nulls, testItem.NullEntries, 
+                Assert.AreEqual(nulls, testItem.NullEntries,
                     $"Mapping for {testItem.Name} provides unexpected null entry count! " +
                     $"This can be implementation error, or test configuration error.");
 

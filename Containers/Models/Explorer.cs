@@ -1,12 +1,5 @@
 ﻿using Containers.Models.Attributes;
-using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace Containers.Models
 {
@@ -23,10 +16,10 @@ namespace Containers.Models
 
             // Go through all of the methods
             // We want literally all of them
-            foreach(var method in t.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+            foreach (var method in t.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 var attribute = method.GetCustomAttribute<Endpoint>();
-                if(attribute != null)
+                if (attribute != null)
                 {
 
                     // now let's generate the method

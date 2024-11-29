@@ -1,11 +1,5 @@
 ﻿using Containers.Addressing;
 using Containers.Models;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Containers.Signals
 {
@@ -60,7 +54,7 @@ namespace Containers.Signals
         public Router(Address<int> id, Type modelType)
         {
             // Validate the class
-            if(!ModelRegistry.ValidateModelType(modelType))
+            if (!ModelRegistry.ValidateModelType(modelType))
             {
                 throw new ArgumentException($"Cannot register {modelType} as a Model. The class must inherit the Model base class!");
             }

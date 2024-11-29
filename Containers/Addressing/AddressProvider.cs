@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+﻿using System.Runtime.InteropServices;
 
 namespace Containers.Addressing
 {
@@ -15,7 +9,7 @@ namespace Containers.Addressing
         /// Internal counter representing the total number of instances allocated in this lifetime
         /// </summary>
         private int _lifetimeAllocation = 0;
-       
+
         public Address<T> FromValue(T value)
         {
             return new(Address<T>.HashToBits(value));
