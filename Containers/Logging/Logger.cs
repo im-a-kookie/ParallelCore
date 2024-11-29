@@ -1,5 +1,8 @@
-﻿using System;
+﻿using Containers.Logging;
+using System;
+using System.Diagnostics;
 using System.IO;
+using System.Reflection.Metadata.Ecma335;
 
 public enum LogLevel
 {
@@ -15,24 +18,65 @@ public class Logger
 
     public static Logger Default = new Logger(LogLevel.Info);
 
+    private List<TextWriter> _writers = [];
+
+    private bool ShouldDebug = false;
+
     private readonly LogLevel _logLevel;
-    private readonly string? _logFilePath;
-    public Logger(LogLevel logLevel = LogLevel.Info, string? logFilePath = null)
+    public Logger(LogLevel logLevel = LogLevel.Info, string? logFilePath = null, IEnumerable<TextWriter>? writer = null)
     {
         _logLevel = logLevel;
-        _logFilePath = logFilePath;
+
+        // We were not given a writer, so add the console
+        if(writer  == null)
+        {
+            _writers.Add(Console.Out);
+        }
+        else
+        {
+            _writers.AddRange(writer.Where(x => x!= null));
+        }
+
+        // Determine if we should debug
+        if(Debugger.IsLogging())
+        {
+            ShouldDebug = true;
+        }
+
+        // append a new writer
+        if(logFilePath != null) _writers.Add(GetFileWriter(logFilePath));
+        
+
+
     }
+
+    public static TextWriter GetFileWriter(string path)
+    {
+        return new AppendingWriter(path);
+    }
+
+
+    private string Header => $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+
 
     private void WriteLog(LogLevel level, string message)
     {
         if (level >= _logLevel)
         {
-            string logMessage = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{level}] {message}";
-            Console.WriteLine(logMessage); // Log to console
+            string h = Header + $"[{level}]: ";
+            string logMessage = $"{h}{message}";
+            //print to all attached text writers
+            foreach(TextWriter writer in _writers)
+            {
+                writer?.WriteLine(logMessage);
+            }
 
-            // Optionally, log to file also
-            if(_logFilePath != null) 
-                File.AppendAllText(_logFilePath, logMessage + Environment.NewLine);
+            //and check if we should use debug output
+            if (ShouldDebug)
+            {
+                System.Diagnostics.Debug.WriteLine(logMessage);
+            }
+
         }
     }
 
@@ -71,4 +115,36 @@ public class Logger
     {
         WriteLog(LogLevel.Fatal, message);
     }
+
+    public void WriteBlock(string header, string message, LogLevel? level = null)
+    {
+        if (level == null) level = _logLevel;
+        if (level < _logLevel) return;
+
+        string h = Header + $" [{level}]: ";
+        string logHeader = $"{h}{header}";
+        string gap = "".PadLeft(h.Length + 1, ' ');
+        var lines = message.Split('\n');
+
+        //print to all attached text writers
+        foreach (TextWriter writer in _writers)
+        {
+            writer?.WriteLine(logHeader);
+            foreach(var line in lines) writer?.WriteLine($"{gap}* {line}");
+        }
+
+        if (ShouldDebug)
+        {
+            System.Diagnostics.Debug.WriteLine(logHeader);
+            foreach (var line in lines) System.Diagnostics.Debug.WriteLine($"{gap} * {line}");
+
+        }
+
+
+
+    }
+
+
+
+
 }

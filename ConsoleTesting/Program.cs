@@ -17,38 +17,55 @@ public class Thing
         Console.WriteLine("Hello, World!");
 
 
-        var t = new TestyThing(123);
+        var t = new TestyThing();
 
-        var m = typeof(TestyThing).GetMethod("TestCall", BindingFlags.Instance | BindingFlags.Public)!;
+        var m = typeof(TestyThing).GetMethod("TestCall", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public)!;
 
         var d = DelegateBuilder.CreateCallbackDelegate(t, m);
 
-        d(null, null, t, null, null, null, null);
+        Test(new Datas());
 
+        var result = d(null, new Datas(), t, null, null, null, null);
+
+        if (result is Datas dt) Console.WriteLine("Result: " + dt.data);
+        else Console.WriteLine("Result: " + (result ?? "<null>"));
+
+    }
+
+
+    static void Test(object? t)
+    {
+        Console.WriteLine(t);
+        Console.WriteLine(t.GetType());
+        Console.WriteLine(t.GetType().IsValueType);
     }
 
 
 }
 
 
+public struct Datas
+{
+    public int data;
+    public double value;
+}
+
 public class TestyThing : Model
 {
-
-    public int MyData = 10;
+    int value = 123;
 
     public TestyThing(Provider provider) : base(provider)
     {
     }
 
+    public TestyThing() : base(null)
+    {
 
-    public TestyThing(int x) : base(null) {
-
-        MyData = x;
     }
 
-    public void TestCall(TestyThing me)
+    public static Datas?  TestCall(TestyThing? me, Datas? x, Datas? y)
     {
-        Console.WriteLine($"{me.MyData}");
+        return new() { data = 10 };
     }
 
 }
