@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 
 namespace Containers.Models
 {
-    internal class SignalQueue : ISignalQueue, IDisposable
+    public class SignalQueue : ISignalQueue, IDisposable
     {
         private int _maxSize = -1;
 
@@ -31,40 +31,28 @@ namespace Containers.Models
             if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
         }
 
-        public bool Queue(Signal signal)
+        public bool Queue(Signal signal, int timeoutMs = -1)
         {
-            if (_maxSize > 0 && Count() > _maxSize) return false;
-            _lock.EnterReadLock();
-            try
+            if (_maxSize > 0 && Count() >= _maxSize) return false;
+            if (_lock.TryEnterReadLock(timeoutMs))
             {
-                //add the signal to the queue
-                _internalQueue.Add(signal);
-                return true;
+                try
+                {
+                    //add the signal to the queue
+                    _internalQueue.Add(signal);
+                    return true;
+                }
+                finally
+                {
+                    if (_lock.IsReadLockHeld) _lock.ExitReadLock();
+                }
             }
-            finally
-            {
-                if (_lock.IsReadLockHeld) _lock.ExitReadLock();
-            }
-
+            return false;
         }
 
         public void SetMaxSize(int size)
         {
             _maxSize = size;
-        }
-
-        public bool TryGet(int timeout, out Signal? result)
-        {
-            _lock.EnterReadLock();
-            try
-            {
-                //add the signal to the queue
-                return _internalQueue.TryTake(out result, timeout);
-            }
-            finally
-            {
-                if (_lock.IsReadLockHeld) _lock.ExitReadLock();
-            }
         }
 
         public bool TryGet(TimeSpan timeout, out Signal? result)
@@ -74,20 +62,6 @@ namespace Containers.Models
             {
                 //add the signal to the queue
                 return _internalQueue.TryTake(out result, timeout);
-            }
-            finally
-            {
-                if (_lock.IsReadLockHeld) _lock.ExitReadLock();
-            }
-        }
-
-        public bool TryGet(out Signal? result)
-        {
-            _lock.EnterReadLock();
-            try
-            {
-                //add the signal to the queue
-                return _internalQueue.TryTake(out result);
             }
             finally
             {

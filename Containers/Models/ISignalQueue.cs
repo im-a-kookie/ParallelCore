@@ -14,7 +14,7 @@ namespace Containers.Models
         /// <param name="timeout">The maximum duration to wait for a signal.</param>
         /// <param name="result">The retrieved signal, if available, or null if the timeout is reached.</param>
         /// <returns>True if a signal was successfully retrieved; otherwise, false.</returns>
-        public bool TryGet(int timeout, out Signal? result);
+        public bool TryGet(int timeout, out Signal? result) => TryGet(TimeSpan.FromMilliseconds(timeout), out result);
 
         /// <summary>
         /// Attempts to retrieve a signal from the queue within a specified timeout period.
@@ -29,14 +29,14 @@ namespace Containers.Models
         /// </summary>
         /// <param name="result">The retrieved signal, if available, or null if the queue is empty.</param>
         /// <returns>True if a signal was successfully retrieved; otherwise, false.</returns>
-        public bool TryGet(out Signal? result);
+        public bool TryGet(out Signal? result) => TryGet(0, out result);
 
         /// <summary>
         /// Adds a signal to the queue.
         /// </summary>
         /// <param name="signal">The signal to be queued.</param>
         /// <returns>True if the signal was successfully added to the queue; otherwise, false.</returns>
-        public bool Queue(Signal signal);
+        public bool Queue(Signal signal, int timeoutMs = -1);
 
         /// <summary>
         /// Sets the maximum size for the queue (overflow items trigger <see cref="Queue(Signal)"/> to return false.
