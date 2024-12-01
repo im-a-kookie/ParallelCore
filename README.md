@@ -64,10 +64,13 @@ provider.RegisterModel(typeof(MyModel));
 
 ### 3. Calling a Method via Delegate
 ```csharp
+// Create and run a new instance of the model
 var instance = new MyModel();
-var delegateCaller = modelInstance.GetDelegate("DoWork");
+provider.RunModel(instance);
 
-delegateCaller("Hello, ParallelCore!"); //called from model thread
+// Delegate can now be invoked within the model container
+var delegateCaller = instance.GetDelegate("DoWork");
+delegateCaller("Hello, ParallelCore!");
 
 // Output:
 // Processing: Hello, ParallelCore!
@@ -76,6 +79,9 @@ delegateCaller("Hello, ParallelCore!"); //called from model thread
 ### 4. Subscribing to Events
 ```csharp
 var instance = new MyModel();
+provider.RunModel(instance);
+
+// Subscribe to the configurable tick event
 instance.OnTick += () => Console.WriteLine("Model Ticked!");
 // Output:
 // Model Ticked!
