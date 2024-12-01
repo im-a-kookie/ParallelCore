@@ -8,6 +8,7 @@ ParallelCore is a C# library for building and running logic models in parallel e
 
 - **Model-Driven Design**: Create logic models and run them concurrently through parallelized containers
 - **Command Reflection**: Discover and call methods dynamically at runtime using command strings and attributed methods.
+- **IL Generation**: Uses ILGeneration to dynamically and efficiently map parameters into method signatures
 - **Thread-Aware Delegates**: Delegates generated for model methods are executed within the thread context of the model.
 - **Patterns and Synchronization**: Implements the Observer, Message, and ThreadPool patterns, and various synchronization mechanisms.
 
@@ -58,20 +59,29 @@ public class MyModel : Model
 ### 2. Setting Up a Parallel Schema
 ```csharp
 var provider = new Provider(new ThreadPoolSchema());
-provider.RunModel(new MyModel);
+provider.RunModel(new MyModel());
 ```
 
-### 3. Calling a Method via Reflection
+### 3. Calling a Method via Delegate
 ```csharp
 var instance = new MyModel();
 var delegateCaller = modelInstance.GetDelegate("DoWork");
 
-delegateCaller("Hello, ParallelCore!");
+delegateCaller("Hello, ParallelCore!"); //called from model thread
 
 // Output:
 // Processing: Hello, ParallelCore!
 ```
 
+### 4. Subscribing to Events
+```csharp
+var instance = new MyModel();
+instance.OnTick += () => Console.WriteLine("Model Ticked!");
+// Output:
+// Model Ticked!
+// Model Ticked!
+// ...
+```
 ---
 
 ## Patterns Used
