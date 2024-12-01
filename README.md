@@ -1,14 +1,104 @@
-# Parallel Core
+# ParallelCore
 
-A concurrent framework that encapsulates program state into containerized models that can be processed across multiple threads with configurable parallel schema.
+ParallelCore is a C# library for building and running logic models in parallel environments. It provides an easy-to-use framework for managing and interacting with models, and distributing models over configurable parallel schema (particularly, threadpool). Attributes, Reflection and IL Generation are used to map model layout to delegates for efficient invocation.
 
-# Technical Details
+---
 
-The Model superclass provides a container for a thread context. IO is explicitly defined by the layout of the model class. Attributed methods are located via reflection, and generated into delegates that trigger the invocation of the method within the thread context of the model instance. These delegates accept a data object as a parameter. Delegates can also be generated that return awaitable tasks, that will contain the returns of the invoked methods.
+## Features
 
-Using reflection and IL generation, almost all methods can be attributed, including static, but limitations exist and most parameters will be set to null/default. It is recommended to provide only a selection of Model, Signal, and object? parameters, where the object? represents a data packet, and can be typed explicitly.
+- **Model-Driven Design**: Create logic models and run them concurrently through parallelized containers
+- **Command Reflection**: Discover and call methods dynamically at runtime using command strings and attributed methods.
+- **Thread-Aware Delegates**: Delegates generated for model methods are executed within the thread context of the model.
+- **Patterns and Synchronization**: Implements the Observer, Message, and ThreadPool patterns, and various synchronization mechanisms.
 
-In many cases, parameter expectations can be provided through generic and explicit typing. Where types are unassignable, these values will be replaced with null/default equivalents.
+---
 
-A future goal may be to provide parameters from a global registry by their string name, but the current scope of the project is complete.
+## Technical Overview
+
+### Architecture
+1. **Models**:
+   - Define the core logic of the application.
+   - Can attribute methods and subscribe to events to execute threaded code
+
+2. **Parallel Schema**:
+   - Defaults to a thread pool but can be customized.
+   - Provides message configurable message loops to models
+
+3. **Reflection and IL Generation**:
+   - Runtime discovery of methods.
+   - Flexible signature handling using ILGenerator.
+
+4. **Synchronization Patterns**:
+   - Ensures safe execution across threads.
+   - Supports configurable update rates and update scheduling
+
+---
+
+## Code Examples
+
+### 1. Creating a Simple Model
+```csharp
+using ParallelCore;
+
+public class MyModel : Model
+{
+    public Model()
+    {
+      TickRate = 1; // 1 tick per second
+    }
+
+    [Endpoint]
+    public void DoWork(string? message)
+    {
+        Console.WriteLine($"Processing: {message}");
+    }
+}
+```
+
+### 2. Setting Up a Parallel Schema
+```csharp
+var provider = new Provider(new ThreadPoolSchema());
+provider.RunModel(new MyModel);
+```
+
+### 3. Calling a Method via Reflection
+```csharp
+var instance = new MyModel();
+var delegateCaller = modelInstance.GetDelegate("DoWork");
+
+delegateCaller("Hello, ParallelCore!");
+
+// Output:
+// Processing: Hello, ParallelCore!
+```
+
+---
+
+## Patterns Used
+
+- **Observer Pattern**: For subscribing to and broadcasting events.
+- **Message Loop Pattern**: Centralized processing of model messages.
+- **ThreadPool Pattern**: Efficient parallel execution and thread management.
+- **Synchronization Patterns**: Thread-safe access and updates to shared resources.
+
+---
+
+## Getting Started
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/ParallelCore.git
+   ```
+2. Build the project and add the compiled library to your application.
+3. Follow the examples above to create your first parallel model.
+
+---
+
+## Contributing
+Contributions are welcome! Please open an issue or submit a pull request.
+
+---
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
