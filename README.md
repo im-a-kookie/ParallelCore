@@ -59,7 +59,7 @@ public class MyModel : Model
 ### 2. Setting Up a Parallel Schema
 ```csharp
 var provider = new Provider(new ThreadPoolSchema());
-provider.RunModel(new MyModel());
+provider.RegisterModel(typeof(MyModel));
 ```
 
 ### 3. Calling a Method via Delegate
