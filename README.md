@@ -97,7 +97,7 @@ instance.OnTick += () => Console.WriteLine("Model Ticked!");
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/ParallelCore.git
+   git clone https://github.com/im-a-kookie/ParallelCore.git
    ```
 2. Build the project and add the compiled library to your application.
 3. Follow the examples above to create your first parallel model.
