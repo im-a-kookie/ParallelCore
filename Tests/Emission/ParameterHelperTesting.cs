@@ -1,18 +1,23 @@
 ﻿using Containers.Emission;
 using Containers.Models;
 using Containers.Signals;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections;
 using System.Reflection;
 using System.Text;
+using Tests.Emission.DelegateConstruction.CodeGenerator;
 
 namespace Tests.Emission
 {
+    /// <summary>
+    /// Runs tests on the parameter helper. These tests are relatively complicated,
+    /// as the parameter matching algorithm must be highly robust.
+    /// </summary>
     [TestClass]
     public class ParameterHelperTesting
     {
 
         delegate int SampleDelegate(double first, StringBuilder second);
-
         /// <summary>
         /// Tests <see cref="ParameterHelper.GetDelegateSignature(Type)"/>
         /// </summary>
@@ -26,9 +31,7 @@ namespace Tests.Emission
             Assert.AreEqual(result.returnType, typeof(int), "The return parameter was not correctly retrieved");
             Assert.AreEqual(result.parameterTypes[0], typeof(double), "The method signature was not correctly retrieved");
             Assert.AreEqual(result.parameterTypes[1], typeof(StringBuilder), "The method signature was not correctly retrieved");
-
         }
-
 
         /// <summary>
         /// Validates <see cref="ParameterHelper.MapTypeArrays(Type[], Type[])"/> for basic input arrays.

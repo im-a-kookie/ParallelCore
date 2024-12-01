@@ -29,7 +29,7 @@ namespace Tests.Addressing
         /// Tests that the maximum expected address is calculated correctly
         /// </summary>
         [TestMethod]
-        public void Test_MaxArgument_ExplicitlyTyped()
+        public void Explicit_TestMaxArgument()
         {
             long bonk = 1L << Address<long>.BitDensity;
             long max = bonk - 1L;
@@ -150,7 +150,7 @@ namespace Tests.Addressing
         /// <param name="t"></param>
         [TestMethod]
         [DynamicData("TestTypes")]
-        public void Test_PrimitiveAddressHashing(Type t)
+        public void Generic_TestPrimitiveIntHashing(Type t)
         {
 
             Assert.IsTrue(t.IsValueType, $"TEST ERROR: The type {t} is not a value type and cannot be used for addressing.");
@@ -174,7 +174,7 @@ namespace Tests.Addressing
         /// Tests concurrency/thread-safety for the internal get/set allocator by generating a large number of addresses on many threads concurrently
         /// </summary>
         [TestMethod]
-        public void Test_Address_ConcurrentSafety()
+        public void Threading_TestConcurrentSafety()
         {
             //create a new provider
             IAddressProvider<long> provider = new AddressProvider<long>();

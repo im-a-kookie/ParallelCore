@@ -6,7 +6,7 @@ namespace Tests.Signals
     public class PacketTests
     {
         [TestMethod]
-        public void Test_EmptyPacket_ReturnsNullOrDefault()
+        public void EmptyPacket_ReturnsNullOrDefault()
         {
             // Arrange empty packet
             var packet = new Packet();
@@ -21,7 +21,7 @@ namespace Tests.Signals
         }
 
         [TestMethod]
-        public void Test_PacketWithData_ShouldReturnCorrectType()
+        public void DataPacket_ShouldReturnCorrectType()
         {
             // Set packet with data
             var expectedData = 42;
@@ -33,7 +33,7 @@ namespace Tests.Signals
         }
 
         [TestMethod]
-        public void Test_PacketWithData_ReturnsNullTypeInvalid()
+        public void DataPacket_ReturnsNullTypeInvalid()
         {
             // Create a packet with an int
             var expectedData = 42;
@@ -45,7 +45,7 @@ namespace Tests.Signals
         }
 
         [TestMethod]
-        public void Test_GetData_ShouldReturnOriginalData()
+        public void GetData_ShouldReturnOriginalData()
         {
             // Create with a reference type
             var expectedData = "Test String";
@@ -57,7 +57,7 @@ namespace Tests.Signals
         }
 
         [TestMethod]
-        public void Test_GetDataFromEmptyPacket_ShouldReturnNull()
+        public void EmptyPacket_GetDataReturnsNull()
         {
             var packet = new Packet();
             var result = packet.GetData();
@@ -65,7 +65,7 @@ namespace Tests.Signals
         }
 
         [TestMethod]
-        public void Test_PacketWithNullData_ShouldReturnNull()
+        public void DataPacket_NullDataReturnsNull()
         {
             var packet = new Packet(null);
             var result = packet.GetData<object>();
