@@ -57,16 +57,15 @@ public class MyModel : Model
 ```
 
 ### 2. Setting Up a Parallel Schema
+
 ```csharp
-var provider = new Provider(new ThreadPoolSchema());
-provider.RegisterModel(typeof(MyModel));
+var provider = new new ThreadPoolSchema();
 ```
 
 ### 3. Calling a Method via Delegate
 ```csharp
 // Create and run a new instance of the model
-var instance = new MyModel();
-provider.RunModel(instance);
+var instance = new MyModel(provider);
 
 // Delegate can now be invoked within the model container
 var delegateCaller = instance.GetDelegate("DoWork");
@@ -78,11 +77,11 @@ delegateCaller("Hello, ParallelCore!");
 
 ### 4. Subscribing to Events
 ```csharp
-var instance = new MyModel();
-provider.RunModel(instance);
+var instance = new MyModel(provider);
 
 // Subscribe to the configurable tick event
 instance.OnTick += () => Console.WriteLine("Model Ticked!");
+
 // Output:
 // Model Ticked!
 // Model Ticked!
