@@ -1,4 +1,5 @@
-﻿using Containers.Signals;
+﻿using Containers.Models.Abstractions;
+using Containers.Models.Signals;
 using System.Collections.Concurrent;
 
 namespace Containers.Models
@@ -8,8 +9,7 @@ namespace Containers.Models
         private int _maxSize = -1;
 
         private BlockingCollection<Signal> _internalQueue = new();
-
-        ReaderWriterLockSlim _lock = new();
+        private ReaderWriterLockSlim _lock = new();
 
 
         private long _soonestExpirationTime = DateTime.MaxValue.Ticks;
@@ -99,7 +99,7 @@ namespace Containers.Models
                             if (item.Expiration.Ticks > time)
                             {
                                 _internalQueue.Add(item);
-                                if(item.Expiration.Ticks < _soonestExpirationTime)
+                                if (item.Expiration.Ticks < _soonestExpirationTime)
                                     _soonestExpirationTime = item.Expiration.Ticks;
                             }
                         }

@@ -1,4 +1,4 @@
-﻿using Containers.Signals;
+﻿using Containers.Models.Signals;
 using System.Runtime.InteropServices;
 
 namespace Tests.Signals

@@ -1,4 +1,4 @@
-﻿using Containers.Signals;
+﻿using Containers.Models.Signals;
 
 namespace Tests.Signals
 {

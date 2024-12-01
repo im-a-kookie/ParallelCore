@@ -1,4 +1,4 @@
-﻿namespace Containers.Signals
+﻿namespace Containers.Models.Signals
 {
 
     /// <summary>
@@ -9,7 +9,7 @@
         /// <summary>
         /// the data object
         /// </summary>
-        object? data;
+        private object? data;
 
         /// <summary>
         /// Creates an empty packet

@@ -1,4 +1,4 @@
-﻿using Containers.Signals;
+﻿using Containers.Models;
 using System.Reflection;
 
 namespace Containers.Emission
@@ -23,9 +23,9 @@ namespace Containers.Emission
         }
 
         /// <summary>
-        /// A bundle that describes how to map <see cref="Signals.Router.EndpointCallback"/> to the given method
+        /// A bundle that describes how to map <see cref="Delegates.EndpointCallback"/> to the given method
         /// </summary>
-        class DelegateBundle
+        private class DelegateBundle
         {
             /// <summary>
             /// The entry point delegate
@@ -37,12 +37,12 @@ namespace Containers.Emission
             /// </summary>
             public MethodInfo Target;
             /// <summary>
-            /// The mapping of parameters from <see cref="Signals.Router.EndpointCallback"/> to <see cref="Target"/>
+            /// The mapping of parameters from <see cref="Delegates.EndpointCallback"/> to <see cref="Target"/>
             /// </summary>
             public List<Mapping> ParameterMappings = new();
 
             /// <summary>
-            /// The callback function that invokes <see cref="Target"/> and matches the signature of <see cref="Signals.Router.EndpointCallback"/>
+            /// The callback function that invokes <see cref="Target"/> and matches the signature of <see cref="Delegates.EndpointCallback"/>
             /// </summary>
             public Delegate? Callback;
 
@@ -250,11 +250,12 @@ namespace Containers.Emission
         /// <summary>
         /// The return type of the delegate
         /// </summary>
-        static Type? _returnType;
+        private static Type? _returnType;
+
         /// <summary>
         /// The input parameters of the delegate
         /// </summary>
-        static List<Type>? _cachedTypes;
+        private static List<Type>? _cachedTypes;
 
         /// <summary>
         /// Gets the input types for the delegate signature that we need to map
@@ -265,7 +266,7 @@ namespace Containers.Emission
             // Validate cache
             if (_cachedTypes == null || _returnType == null)
             {
-                var types = GetDelegateSignature(typeof(Router.EndpointCallback));
+                var types = GetDelegateSignature(typeof(Delegates.EndpointCallback));
                 // And store
                 _returnType = types.returnType;
                 _cachedTypes = new List<Type>(types.parameterTypes);
@@ -282,7 +283,7 @@ namespace Containers.Emission
             // Validate cache
             if (_cachedTypes == null || _returnType == null)
             {
-                var types = GetDelegateSignature(typeof(Router.EndpointCallback));
+                var types = GetDelegateSignature(typeof(Delegates.EndpointCallback));
                 // And store
                 _returnType = types.returnType;
                 _cachedTypes = new List<Type>(types.parameterTypes);

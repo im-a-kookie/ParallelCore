@@ -28,15 +28,9 @@ namespace Containers.Signals
         }
 
         /// <summary>
-        /// The global model address provider, which provides unique addresses
-        /// across the entire instance provider
-        /// </summary>
-        static IAddressProvider<long> GlobalModelAddressProvider = new AddressProvider<long>();
-
-        /// <summary>
         /// A mapping of all active instances by their addressed ID
         /// </summary>
-        static ConcurrentDictionary<Address<long>, Model> _instanceMapping = [];
+        private static ConcurrentDictionary<Address<long>, Model> _instanceMapping = [];
 
         /// <summary>
         /// Loads the given model into the global registry.
@@ -48,6 +42,7 @@ namespace Containers.Signals
         public static bool LoadModel(Model model)
         {
             if (model.Constructed) return false;
+
             var address = model.Address;
             if (!_instanceMapping.TryAdd(address, model))
             {
@@ -59,40 +54,43 @@ namespace Containers.Signals
         /// <summary>
         /// The address provider which provides ID values for each Type that can be instantiated as a model
         /// </summary>
-        IAddressProvider<int> TypeAddressProvider = new AddressProvider<int>();
+        private IAddressProvider<int> TypeAddressProvider = new AddressProvider<int>();
 
         /// <summary>
         /// A dictionary that maps the ID address to the type
         /// </summary>
-        ConcurrentDictionary<Address<int>, Type> _idToType = [];
+        private ConcurrentDictionary<Address<int>, Type> _idToType = [];
 
         /// <summary>
         /// A dictionary mapping of type to Address iD
         /// </summary>
-        ConcurrentDictionary<Type, Address<int>> _typeToId = [];
+        private ConcurrentDictionary<Type, Address<int>> _typeToId = [];
 
         /// <summary>
         /// A dictionary that maps the ID address to the signal router
         /// </summary>
-        ConcurrentDictionary<Address<int>, Router> _idToRouter = [];
+        private ConcurrentDictionary<Address<int>, Router> _idToRouter = [];
 
         /// <summary>
         /// A dictionary mapping of type to the signal router
         /// </summary>
-        ConcurrentDictionary<Type, Router> _typeToRouter = [];
+        private ConcurrentDictionary<Type, Router> _typeToRouter = [];
 
         /// <summary>
         /// Register a given type to be instantiated as a model. This method should be idempotent for like types.
         /// </summary>
         public void Register(Type t)
         {
+            // We can break out easily before locking
+            if (_typeToId.ContainsKey(t)) return;
+
             lock (this)
             {
                 //create a new model container
                 if (!ValidateModelType(t))
                     throw new ArgumentException($"Cannot register {t} as a Model. The class must inherit the Model base class!");
 
-                //now add the things
+                // Double check locking pattern
                 if (!_typeToId.ContainsKey(t))
                 {
                     // Use a new address

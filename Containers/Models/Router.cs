@@ -1,8 +1,8 @@
 ﻿using Containers.Addressing;
-using Containers.Emission;
-using Containers.Models;
+using Containers.Models.Signals;
+using Containers.Signals;
 
-namespace Containers.Signals
+namespace Containers.Models
 {
     /// <summary>
     /// The registry provides a simplfied translation between Header values and human-readable strings.
@@ -13,31 +13,17 @@ namespace Containers.Signals
     /// </summary>
     public class Router
     {
-        /// <summary>
-        /// The main delegate callback that is used to provide to endpoints.
-        /// </summary>
-        /// <param name="signal"></param>
-        /// <param name="data"></param>
-        /// <param name="receiver"></param>
-        /// <param name="provider"></param>
-        /// <param name="registry"></param>
-        /// <param name="router"></param>
-        /// <param name="command"></param>
-        /// <returns></returns>
-        /// <remarks>
-        /// Implementation assumes dynamic remapping of parameters. Declaration order of parameters indicates priority when wildcarding.
-        /// </remarks>
-        public delegate object? EndpointCallback(object? data, Model? receiver, Provider? provider, ModelRegistry? registry, Router? router);
+
 
         /// <summary>
         /// The ID address of this router (unique)
         /// </summary>
-        Address<int> ID;
+        private Address<int> ID;
 
         /// <summary>
         /// The ID address of the model category that binds to this router
         /// </summary>
-        Type ModelType;
+        private Type ModelType;
 
         /// <summary>
         /// The signal dictionary that translates comings and goings from this router
@@ -59,8 +45,8 @@ namespace Containers.Signals
             }
 
             // Set the fields
-            this.ID = id;
-            this.ModelType = modelType;
+            ID = id;
+            ModelType = modelType;
             SignalDictionary = new SignalDictionary(modelType);
         }
 

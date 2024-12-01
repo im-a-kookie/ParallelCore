@@ -36,7 +36,7 @@ namespace Containers.Threading.Pool
         /// <summary>
         /// The supervisor that oversees this hist
         /// </summary>
-        PoolSupervisor Supervisor;
+        private PoolSupervisor Supervisor;
 
         /// <summary>
         /// A signal that is used to control the thread loop of this host
@@ -85,9 +85,21 @@ namespace Containers.Threading.Pool
                     //count the time in the loop
                     timer.Restart();
                     double _last = timer.ElapsedMilliseconds;
+                    bool shouldNotifySupervisor = false;
                     while (ScheduledContainers.TryTake(out var container, 0))
                     {
                         Interlocked.Decrement(ref container!.queuedState);
+
+                        // Dequeue and kill it if necessary
+                        if (container.ShouldDie)
+                        {
+                            // Tell the model
+                            container.Child.InvokeModelEnd();
+                            container.HasDied = true; // we are now safe to dispose
+                            shouldNotifySupervisor = true;
+                            Interlocked.Decrement(ref container!.queuedState);
+                            continue;
+                        }
 
                         // Enter the model
                         try
@@ -95,9 +107,9 @@ namespace Containers.Threading.Pool
                             container._AllocationLock.EnterReadLock();
                             container.Child?.OnModelEnter(cancellationToken);
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
-                            Logger.Default.WriteBlock($"{ex} Exception, {ex.Message}", 
+                            Logger.Default.WriteBlock($"{ex} Exception, {ex.Message}",
                                 $"Thread:    0x{Address}\n" +
                                 $"Container: 0x{container.Address}\n" +
                                 $"Model:     0x{container.Child.Address}");
@@ -114,11 +126,15 @@ namespace Containers.Threading.Pool
                             container?.Schedule(
                                 ms_delay: (int)(1000 / (container?.Child?.ExpectedIterationsPerSecond ?? 1)));
                         }
-                        
+
                         // calculate the elapsed amount
                         double elapsed = timer.ElapsedMilliseconds - _last;
                         // TODO pass elapsed time back into container so that we can measure the utilization correctly
                     }
+
+                    // Unblock the supervisor
+                    if (shouldNotifySupervisor) Supervisor.signal.Set();
+
                     double runTime = timer.ElapsedMilliseconds;
 
                     signal.WaitOne(-1);
@@ -138,7 +154,7 @@ namespace Containers.Threading.Pool
                     // Now we can estiamte the mean as a total based on the mean + iterations
                     double estimated_total = EstimatedLoad * iterations;
                     double new_total = estimated_total + loopTime; // add the new delay
-                    
+
                     // and recalculate the average
                     EstimatedLoad = new_total / (iterations + 1);
 

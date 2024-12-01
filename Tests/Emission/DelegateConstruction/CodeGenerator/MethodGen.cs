@@ -1,28 +1,18 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.Metrics;
-using System.Dynamic;
-using System.Linq;
+﻿using System.Buffers;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Tests.Emission.DelegateConstruction.CodeGenerator
 {
     internal class MethodGen
     {
-
-
-        static string[] parameterTypes = new[]
+        private static string[] parameterTypes = new[]
         {
                 "int", "short", "double", "int?", "short?", "double?",
                 "SampleDataClass", "SampleDataStruct", "SampleDataStruct?",
                 "string", "Model", "Signal", "Int128", "Int128?",
                 "string?"
         };
-
-        static string[] validReturns = new[]
+        private static string[] validReturns = new[]
             {   "void", "int", "int?", "short", "short?", "byte", "byte?", "float", "double",
                 "double?", "SampleDataClass", "SampleDataClass?",
                 "SampleDataStruct", "SampleDataStruct?"
@@ -37,7 +27,7 @@ namespace Tests.Emission.DelegateConstruction.CodeGenerator
         public static List<string[]> GetParameterTypes(Random randomizer, int numberOfParams, int numberOfSignatures)
         {
             List<string[]> results = new();
-            for(int i = 0; i < numberOfSignatures; ++i)
+            for (int i = 0; i < numberOfSignatures; ++i)
             {
                 if (numberOfParams == 0) results.Add([]);
                 else
@@ -60,14 +50,14 @@ namespace Tests.Emission.DelegateConstruction.CodeGenerator
             List<string> methods = new();
             int returnPos = 0;
             int counter = 0;
-            for(int i = 0; i < 10; i++)
+            for (int i = 0; i < 10; i++)
             {
                 var paramTypes = GetParameterTypes(randomizer, i, 50);
-                for(int pi = 0; pi < paramTypes.Count; ++pi)
+                for (int pi = 0; pi < paramTypes.Count; ++pi)
                 {
                     var signature = string.Join(", ", paramTypes[pi].Where(x => x != null && x.Length > 1));
                     var retVal = validReturns[(returnPos++) % validReturns.Length];
-                    if(retVal == "void")
+                    if (retVal == "void")
                     {
                         string method = $"public {retVal} Method{counter++}({signature}){{ }}";
                         methods.Add(method);

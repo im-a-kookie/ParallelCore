@@ -1,6 +1,6 @@
-﻿using Containers.Signals;
+﻿using Containers.Models.Signals;
 
-namespace Containers.Models
+namespace Containers.Models.Abstractions
 {
     public interface IForwardDelegate
     {
@@ -42,13 +42,13 @@ namespace Containers.Models
         /// <typeparam name="T">The expected type</typeparam>
         /// <param name="obj">The data object.</param>
         /// <returns>The return value, or null if the endpoint returns null, or a value of an incompatible type.</returns>
-        public Task<T?> InvokeAsync<T>(object? obj) 
+        public Task<T?> InvokeAsync<T>(object? obj)
         {
-            return Task.Run<T?>(async () =>
+            return Task.Run(async () =>
             {
                 var t = InvokeAsync(obj);
                 await t; //await the result
-                if(t != null && t is T tt)
+                if (t != null && t is T tt)
                 {
                     return tt;
                 }

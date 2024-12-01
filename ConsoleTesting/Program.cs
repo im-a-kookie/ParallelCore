@@ -1,9 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using Containers;
-using Containers.Emission;
 using Containers.Models;
+using Containers.Threading;
 using Containers.Threading.Pool;
-using System.Reflection;
 
 
 
@@ -15,17 +13,11 @@ public class Thing
         Console.WriteLine("Hello, World!");
 
 
-        Provider p = new Provider(new ParallelPoolSchema());
-
-
-        p.ModelRegistry.Register(typeof(Model));
-
+        ParallelSchema p = new ParallelPoolSchema();
 
         Model m = new Model(p);
 
-        p.StartProvider();
-
-        p.StartModel(m);
+        m.OnModelEnd += (m) => Console.WriteLine($"Model 0x{m.Address} Exited!");
 
 
         var exit = m.GetDelegate<string>("Exit");
@@ -33,7 +25,7 @@ public class Thing
         while (true)
         {
             var s = Console.ReadLine();
-            if(s == "kill")
+            if (s == "kill")
             {
                 return;
             }

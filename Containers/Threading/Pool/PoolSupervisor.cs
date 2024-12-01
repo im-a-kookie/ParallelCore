@@ -1,5 +1,4 @@
-﻿using Containers.Addressing;
-using Containers.Models;
+﻿using Containers.Models;
 using System.Collections.Concurrent;
 
 namespace Containers.Threading.Pool
@@ -46,7 +45,7 @@ namespace Containers.Threading.Pool
         /// <param name="threads"></param>
         /// <param name="averageLoad"></param>
         /// <returns></returns>
-        static double DefaultLoadFunction(int threads, double averageLoad)
+        private static double DefaultLoadFunction(int threads, double averageLoad)
         {
             // A reasonable target load falls at around 0.8
             // so let's adjust this to 0.5
@@ -54,7 +53,7 @@ namespace Containers.Threading.Pool
             double targetLoad = 0.8;
             double n = Math.Log(targetLoad);
             double x = Math.Log(0.5);
-            
+
             return Math.Pow(averageLoad, x / n);
         }
 
@@ -68,7 +67,7 @@ namespace Containers.Threading.Pool
         /// <summary>
         /// A collection of all active threads
         /// </summary>
-        List<PoolHost> _activeThreads = [];
+        private List<PoolHost> _activeThreads = [];
 
         public AutoResetEvent signal = new AutoResetEvent(false);
 
@@ -113,7 +112,7 @@ namespace Containers.Threading.Pool
                     // such that the distribution is a little fairer
                     // The logic is
                     // 1. If the utilization is high then we create a new thread
-                    
+
 
                     // Next, we perform a load balancing step
                     // Wherein we go through every host thread and every task they own
@@ -124,7 +123,7 @@ namespace Containers.Threading.Pool
                     while (TotalThreads < 1)
                     {
                         var counter = Interlocked.Increment(ref TotalThreads);
-                        if(counter <= TargetThreads)
+                        if (counter <= TargetThreads)
                         {
                             _activeThreads.Add(new PoolHost(ParallelProvider, this));
                         }
@@ -135,21 +134,21 @@ namespace Containers.Threading.Pool
                     }
 
                     // Queue up any models that are awaiting being started
-                    while(AwaitingModels.TryDequeue(out var model))
+                    while (AwaitingModels.TryDequeue(out var model))
                     {
                         //find the best host
                         double minLoad = double.MaxValue;
                         PoolHost? bestHost = _activeThreads.Where(x => !x.DidDie).FirstOrDefault();
-                        foreach(var host in _activeThreads)
+                        foreach (var host in _activeThreads)
                         {
-                            if(host.EstimatedLoad < minLoad)
+                            if (host.EstimatedLoad < minLoad)
                             {
                                 minLoad = host.EstimatedLoad;
                                 bestHost = host;
                             }
                         }
                         // Now create the container and point it at the best host thing
-                        if(bestHost != null && !bestHost.DidDie && !bestHost.ShouldDie)
+                        if (bestHost != null && !bestHost.DidDie && !bestHost.ShouldDie)
                         {
                             PoolContainer pc = new PoolContainer(model!);
                             model.NotifyContainerReceivedModel(pc);
@@ -158,9 +157,27 @@ namespace Containers.Threading.Pool
                         }
                     }
 
+                    // Now clean up dead containers
+                    foreach (var host in _activeThreads)
+                    {
+                        foreach (var container in host.Containers)
+                        {
+                            if (container.HasDied)
+                            {
+                                container.Child.InvokeModelDispose();
+                                if (container.Child is IDisposable disposabe) disposabe.Dispose();
+                                container.Dispose();
+                            }
+                        }
+
+
+                    }
+
+
+
                     signal.WaitOne();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Logger.Default.Error(ex.Message);
                     Console.WriteLine($"Supervisor 0x{Address} Error: {ex.Message}, {ex.TargetSite}");

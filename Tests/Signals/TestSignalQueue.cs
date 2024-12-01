@@ -1,7 +1,5 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Containers.Models;
-using Containers.Signals;
+﻿using Containers.Models;
+using Containers.Models.Signals;
 
 namespace Containers.Tests
 {
@@ -13,7 +11,7 @@ namespace Containers.Tests
         {
 
             using var queue = new SignalQueue();
-            var signal = new Signal(); 
+            var signal = new Signal();
 
             var result = queue.Queue(signal);
             Assert.AreEqual(1, queue.Count(), "Queue does not contain items after addition");
@@ -88,7 +86,7 @@ namespace Containers.Tests
             });
             thread.Start();
             // Now wait for it to be completed
-            if(!thread.Join(TimeSpan.FromSeconds(3)))
+            if (!thread.Join(TimeSpan.FromSeconds(3)))
             {
                 Assert.Fail("The queue does not respect immediate timeout!");
             }
@@ -123,7 +121,7 @@ namespace Containers.Tests
             }
             // Unlock and donk
             queue.Unlock();
-            if(!thread.Join(TimeSpan.FromMilliseconds(300)))
+            if (!thread.Join(TimeSpan.FromMilliseconds(300)))
             {
                 Assert.Fail("The thread does not unlock correctly!");
             }

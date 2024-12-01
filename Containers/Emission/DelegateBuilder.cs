@@ -1,9 +1,8 @@
 ﻿using Containers.Models;
-using Containers.Signals;
+using Containers.Models.Signals;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using System.Text;
 using static Containers.Emission.ParameterHelper;
 
@@ -87,12 +86,12 @@ namespace Containers.Emission
                     throw new ArgumentException("The provided type must be a Delegate!");
                 }
 
-                if(target.DeclaringType == null)
+                if (target.DeclaringType == null)
                 {
                     throw new ArgumentException("The target must have a declaring type!");
                 }
 
-                if(!target.DeclaringType.IsAssignableTo(typeof(M)))
+                if (!target.DeclaringType.IsAssignableTo(typeof(M)))
                 {
                     throw new ArgumentException($"The target type must be of {typeof(M)}");
                 }
@@ -116,9 +115,9 @@ namespace Containers.Emission
                 ValidateStaticTargetParams();
 
 
-                foreach(var m in Mappings)
+                foreach (var m in Mappings)
                 {
-                    if(m.src == 0)
+                    if (m.src == 0)
                     {
                         DataType = TargetParams[m.dst];
                         break;
@@ -248,7 +247,7 @@ namespace Containers.Emission
         /// </summary>
         /// <param name="target"></param>
         /// <returns></returns>
-        public static Router.EndpointCallback CreateCallbackDelegate(MethodInfo target)
+        public static Delegates.EndpointCallback CreateCallbackDelegate(MethodInfo target)
         {
             return CreateCallbackDelegate(target, out var context);
         }
@@ -258,15 +257,15 @@ namespace Containers.Emission
         /// </summary>
         /// <param name="target"></param>
         /// <returns></returns>
-        public static Router.EndpointCallback CreateCallbackDelegate(
-            MethodInfo target, 
-            out BuilderContext<Model, Router.EndpointCallback>? context)
+        public static Delegates.EndpointCallback CreateCallbackDelegate(
+            MethodInfo target,
+            out BuilderContext<Model, Delegates.EndpointCallback>? context)
         {
             // first, ensure input validity
             ValidateInputs(target);
 
             // Build the context for the creation
-            context = new BuilderContext<Model, Router.EndpointCallback>(target);
+            context = new BuilderContext<Model, Delegates.EndpointCallback>(target);
             var dynamicMethod = context.CreateDynamicMethod(); // makes it easy to get the dynamic method
 
             //now get the il generator
@@ -320,7 +319,7 @@ namespace Containers.Emission
             // So create the delegate and send it back
             // The delegate itself is statically typed
             // And uses the Model parameter to do the thing
-            return (Router.EndpointCallback)dynamicMethod.CreateDelegate(typeof(Router.EndpointCallback));
+            return (Delegates.EndpointCallback)dynamicMethod.CreateDelegate(typeof(Delegates.EndpointCallback));
 
         }
 
@@ -330,7 +329,7 @@ namespace Containers.Emission
         /// <typeparam name="T"></typeparam>
         /// <param name="il"></param>
         /// <param name="context"></param>
-        private static void EmitReturnType<M,T>(ILGenerator il, BuilderContext<M,T> context)
+        private static void EmitReturnType<M, T>(ILGenerator il, BuilderContext<M, T> context)
         {
             // If we do not have a return type from the delegate
             // Then we need to clear the stack from any target calls
@@ -435,7 +434,7 @@ namespace Containers.Emission
         {
             var nullableType = typeof(Nullable<>).MakeGenericType(underlyingType);
             var nullConstructor = nullableType.GetConstructor([underlyingType])!;
-            
+
             if (!underlyingType.IsPrimitive)
             {
                 // This case is simple

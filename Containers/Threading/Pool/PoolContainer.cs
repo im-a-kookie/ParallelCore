@@ -1,5 +1,4 @@
 ﻿using Containers.Models;
-using System.Diagnostics.Metrics;
 
 namespace Containers.Threading.Pool
 {
@@ -17,17 +16,21 @@ namespace Containers.Threading.Pool
         public bool ShouldDie { get; private set; }
 
         /// <summary>
+        /// A flag indicating whether this container has died
+        /// </summary>
+        public bool HasDied { get; internal set; }
+
+        /// <summary>
         /// An indicator used to hold this container during threadpool task balancing
         /// operations.
         /// </summary>
         public ReaderWriterLockSlim _AllocationLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
-        /// <summary>
-        /// Notifies that this container should die
-        /// </summary>
-        public void Kill()
+
+        public override void Exit()
         {
             ShouldDie = true;
+            Notify();
             host?.signal.Set();
         }
 
@@ -66,20 +69,20 @@ namespace Containers.Threading.Pool
             }
             finally
             {
-                if(_AllocationLock.IsReadLockHeld)
+                if (_AllocationLock.IsReadLockHeld)
                 {
                     _AllocationLock.ExitReadLock();
                 }
             }
 
         }
-        
+
         /// <summary>
         /// Schedules this container to be run again after the given number of milliseconds
         /// </summary>
         /// <param name="ms_delay"></param>
         public void Schedule(int ms_delay)
-        {            
+        {
             //add us to the thing
             int counter = Interlocked.Increment(ref awaitingState);
             if (counter > 1)
@@ -91,7 +94,7 @@ namespace Containers.Threading.Pool
             Task.Run(() =>
             {
                 var t = host?.ParallelProvider.CancellationToken;
-                if(t != null && !t.Value.IsCancellationRequested)
+                if (t != null && !t.Value.IsCancellationRequested)
                 {
                     Task.Delay(ms_delay, t.Value);
                 }
@@ -113,5 +116,7 @@ namespace Containers.Threading.Pool
         {
             _AllocationLock.Dispose();
         }
-}
+
+
     }
+}

@@ -16,9 +16,11 @@ namespace Containers.Threading
 
         public abstract void Notify();
 
+        public abstract void Exit();
+
         public virtual void Dispose()
         {
-            
+
 
 
 

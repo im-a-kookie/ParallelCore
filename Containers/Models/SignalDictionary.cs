@@ -1,10 +1,9 @@
 ﻿using Containers.Emission;
-using Containers.Models;
 using Containers.Models.Attributes;
-using System.ComponentModel.DataAnnotations;
+using Containers.Models.Signals;
 using System.Reflection;
 
-namespace Containers.Signals
+namespace Containers.Models
 {
     public class SignalDictionary
     {
@@ -66,7 +65,7 @@ namespace Containers.Signals
 
                 // Now make the generic
                 var wrapper = typeof(Wrapper<,>).MakeGenericType(dataType, returnType);
-                var result = wrapper.GetConstructor([typeof(Router.EndpointCallback)])!.Invoke([callback]);
+                var result = wrapper.GetConstructor([typeof(Delegates.EndpointCallback)])!.Invoke([callback]);
 
                 // Check that the result is good and then register
                 if (result != null)
@@ -80,7 +79,7 @@ namespace Containers.Signals
                     Array.Copy(names, newNames, nameCount);
 
                     _names.Add(newNames);
-                    foreach(string s in newNames)
+                    foreach (string s in newNames)
                     {
                         _nameToIndex.TryAdd(s, count);
                     }
@@ -95,7 +94,7 @@ namespace Containers.Signals
         /// <returns></returns>
         public Header? GetHeader(string command)
         {
-            if(_nameToIndex.TryGetValue(command, out var index))
+            if (_nameToIndex.TryGetValue(command, out var index))
             {
                 if (index < 0 || index >= _wrappers.Count) return null;
                 return new Header((ushort)index);
@@ -125,9 +124,9 @@ namespace Containers.Signals
         /// <exception cref="KeyNotFoundException"></exception>
         public Wrapper GetWrapper(string name)
         {
-            if(_nameToIndex.TryGetValue(name, out var index))
+            if (_nameToIndex.TryGetValue(name, out var index))
             {
-                if(index >= 0 && index < _wrappers.Count)
+                if (index >= 0 && index < _wrappers.Count)
                 {
                     return _wrappers[index];
                 }

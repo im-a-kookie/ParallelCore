@@ -1,6 +1,6 @@
-﻿using Containers.Signals;
+﻿using Containers.Models.Signals;
 
-namespace Containers.Models
+namespace Containers.Models.Abstractions
 {
     /// <summary>
     /// Represents a queue for managing the signals provided to the Model. Implementation must be threadsafe.

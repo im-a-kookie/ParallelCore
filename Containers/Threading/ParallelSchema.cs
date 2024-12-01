@@ -1,27 +1,33 @@
 ﻿using Containers.Addressing;
 using Containers.Models;
+using Containers.Models.Abstractions;
+using Containers.Signals;
 
 namespace Containers.Threading
 {
     public abstract class ParallelSchema : Addressable, IDisposable
     {
 
+        /// <summary>
+        /// A lock to help this schema do its thing
+        /// </summary>
+        private Lock _lock = new();
+
+        /// <summary>
+        /// The cancellation source for this schema, allowing a cancellation signal through the stack.
+        /// </summary>
         public CancellationTokenSource CancellationSource;
 
+        /// <summary>
+        /// The cancellation token for <see cref="CancellationSource"/>. Monitor to receive cancellation signal.
+        /// </summary>
         public CancellationToken CancellationToken;
 
-        public ParallelSchema() : base()
-        {
-            CancellationSource = new();
-        }
+        /// <summary>
+        /// Gets the model registry for this provider
+        /// </summary>
+        public ModelRegistry ModelRegistry { get; private set; }
 
-        public void Dispose()
-        {
-            CancellationSource.Dispose();
-        }
-
-
-        Lock _lock = new();
 
         /// <summary>
         /// Gets a boolean value indicating whether this schema has been started
@@ -34,17 +40,54 @@ namespace Containers.Threading
         /// </summary>
         public bool ShouldRun { get; private set; }
 
+
+
         /// <summary>
-        /// The provider that is operating with this schema
+        /// Creates a new parallel schema
         /// </summary>
-        public Provider? Provider { get; private set; }
+        public ParallelSchema() : base()
+        {
+            CancellationSource = new();
+            ModelRegistry = new ModelRegistry();
+            StartProvider();
+        }
+
+        /// <summary>
+        /// Cleanup some stuffffff
+        /// </summary>
+        public void Dispose()
+        {
+            CancellationSource.Cancel();
+            CancellationSource.Dispose();
+        }
+
+        /// <summary>
+        /// Provides the signal queue instance to the models
+        /// </summary>
+        /// <returns></returns>
+        public virtual ISignalQueue ProvideSignalQueue()
+        {
+            return new SignalQueue();
+        }
+
+        /// <summary>
+        /// Starts running a model on this schema
+        /// </summary>
+        /// <param name="model"></param>
+        public void StartModel(Model model)
+        {
+            // Configure the internals of the model
+            model.MessageQueue = ProvideSignalQueue();
+            model.SignalRegistry = ModelRegistry.GetRouterForModel(model);
+            ProvideModelToThreads(model);
+        }
 
         /// <summary>
         /// Internal call that starts the provider
         /// </summary>
         /// <param name="provider"></param>
         /// <exception cref="InvalidOperationException"></exception>
-        internal virtual void _Start(Provider provider)
+        internal virtual void StartProvider()
         {
             lock (_lock)
             {
@@ -55,22 +98,21 @@ namespace Containers.Threading
                 // Indicate starting information
                 ShouldRun = true;
                 Started = true;
-                Provider = provider;
-                OnStart();
+
+                NotifySchemaStarted();
             }
         }
 
         /// <summary>
-        /// Called after the parallel schema has been started, and should provide core behaviour to initialize
-        /// threads and pools and so on.
+        /// Called when this schema is started, and should be used to start running the threads
         /// </summary>
-        public abstract void OnStart();
+        internal abstract void NotifySchemaStarted();
 
         /// <summary>
-        /// Starts running the given model on this parallel scheme
+        /// Provides this model to the threads within this schema
         /// </summary>
         /// <param name="model"></param>
-        public abstract void RunModel(Model model);
+        internal abstract void ProvideModelToThreads(Model model);
 
 
     }

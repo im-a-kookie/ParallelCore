@@ -5,7 +5,7 @@ namespace Containers.Addressing
 {
     internal class B64Encoder<T> : IAddressEncoder
     {
-        static int Bits = 6;
+        private static int Bits = 6;
         // Base64 character set
         public static readonly char[] Characters = new char[]
         {

@@ -17,13 +17,13 @@ namespace Containers.Threading.Pool
 
         }
 
-        public override void OnStart()
+        internal override void NotifySchemaStarted()
         {
             //create a new pool supervisor
             PoolSupervisor = new PoolSupervisor(this);
         }
 
-        public override void RunModel(Model model)
+        internal override void ProvideModelToThreads(Model model)
         {
             PoolSupervisor?.AwaitingModels.Enqueue(model);
             PoolSupervisor?.signal.Set();

@@ -1,11 +1,9 @@
 ﻿using Containers.Emission;
 using Containers.Models;
-using Containers.Signals;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Containers.Models.Signals;
 using System.Collections;
 using System.Reflection;
 using System.Text;
-using Tests.Emission.DelegateConstruction.CodeGenerator;
 
 namespace Tests.Emission
 {
@@ -16,8 +14,7 @@ namespace Tests.Emission
     [TestClass]
     public class ParameterHelperTesting
     {
-
-        delegate int SampleDelegate(double first, StringBuilder second);
+        private delegate int SampleDelegate(double first, StringBuilder second);
         /// <summary>
         /// Tests <see cref="ParameterHelper.GetDelegateSignature(Type)"/>
         /// </summary>
@@ -104,7 +101,7 @@ namespace Tests.Emission
         /// <summary>
         /// Internal collection of test parameters
         /// </summary>
-        static partial class TestParameters
+        private static partial class TestParameters
         {
             public static TestItem Empty = new([]);
             public static TestItem DataOnly = new(typeof(SampleClass)) { Wildcards = 1 };
@@ -140,10 +137,10 @@ namespace Tests.Emission
             //get the sample method handle
             var method = typeof(ParameterHelperTesting).GetMethod("SampleMethod", BindingFlags.Public | BindingFlags.Instance);
             Assert.IsNotNull(method, "TEST ERROR: Coult not find sample method for testing");
-            var mappings = ParameterHelper.GenerateSignatureMappings(typeof(Router.EndpointCallback), method);
+            var mappings = ParameterHelper.GenerateSignatureMappings(typeof(Delegates.EndpointCallback), method);
 
             //and get the types
-            var inputTypes = ParameterHelper.GetDelegateSignature(typeof(Router.EndpointCallback)).parameterTypes;
+            var inputTypes = ParameterHelper.GetDelegateSignature(typeof(Delegates.EndpointCallback)).parameterTypes;
             var outputTypes = ParameterHelper.GetDelegateSignature(SampleMethod).parameterTypes;
 
             foreach (var m in mappings)
@@ -156,13 +153,13 @@ namespace Tests.Emission
 
 
         /// <summary>
-        /// Tests <see cref="ParameterHelper.MapTypeArrays(Type[], Type[])"/> for core delegate <see cref="Router.EndpointCallback"/>
+        /// Tests <see cref="ParameterHelper.MapTypeArrays(Type[], Type[])"/> for core delegate <see cref="Delegates.EndpointCallback"/>
         /// </summary>
         [TestMethod]
         public void EndpointCallback_CorrectlyMapped()
         {
             // Use the actual router callback delegate
-            var inputTypes = ParameterHelper.GetDelegateSignature(typeof(Router.EndpointCallback)).parameterTypes;
+            var inputTypes = ParameterHelper.GetDelegateSignature(typeof(Delegates.EndpointCallback)).parameterTypes;
 
             var tests = TestParameters.GetItems();
             foreach (var testItem in tests)
@@ -213,7 +210,7 @@ namespace Tests.Emission
         /// <summary>
         /// An empty class to validate wildcards on guaranteed-unknown types
         /// </summary>
-        class SampleClass
+        private class SampleClass
         {
 
         }
@@ -251,7 +248,7 @@ namespace Tests.Emission
         /// <summary>
         /// Provides a GetItems implementation. Implementation moved to bottom of file to reduce clutter
         /// </summary>
-        static partial class TestParameters
+        private static partial class TestParameters
         {
             /// <summary>
             /// Gets the list of test items out of this arameter class

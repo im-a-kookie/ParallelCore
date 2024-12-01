@@ -247,7 +247,7 @@ namespace Tests.Addressing
         /// <param name="accumulator">Accumulator array to count operations</param>
         /// <param name="signal">Optional signal to synchronize all threads</param>
         /// <returns></returns>
-        Task<Exception?> RunConcurrentGenerator<T>(IAddressProvider<T> provider, int threadIndex, int iterations, int[] accumulator, ManualResetEvent? signal = null) where T : struct
+        private Task<Exception?> RunConcurrentGenerator<T>(IAddressProvider<T> provider, int threadIndex, int iterations, int[] accumulator, ManualResetEvent? signal = null) where T : struct
         {
             return Task.Run(() =>
             {
@@ -283,7 +283,7 @@ namespace Tests.Addressing
         /// <typeparam name="T"></typeparam>
         /// <param name="provider"></param>
         /// <returns></returns>
-        int Iterate<T>(IAddressProvider<T> provider) where T : struct
+        private int Iterate<T>(IAddressProvider<T> provider) where T : struct
         {
             for (int j = 0; j < 100_000; ++j) provider.Get();
             return 100_000;
@@ -294,7 +294,7 @@ namespace Tests.Addressing
         /// </summary>
         /// <param name="val"></param>
         /// <returns></returns>
-        string Unitify(double val)
+        private string Unitify(double val)
         {
             string[] nominators = ["ns", "us", "ms"];
             int magnitude = (int)Math.Log10(val) / 3;

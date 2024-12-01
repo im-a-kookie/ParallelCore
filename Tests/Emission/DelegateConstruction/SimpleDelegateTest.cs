@@ -1,13 +1,6 @@
 ﻿using Containers.Emission;
 using Containers.Models;
-using Containers.Signals;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tests.Emission.DelegateConstruction.CodeGenerator;
 
 namespace Tests.Emission.DelegateConstruction
@@ -24,14 +17,14 @@ namespace Tests.Emission.DelegateConstruction
             Debug.WriteLine(str);
             var asm = Compiler.GenerateAssemblyFromMethods(str);
             Debug.WriteLine(asm.GetName());
-            List<Router.EndpointCallback> delegates = new();
+            List<Delegates.EndpointCallback> delegates = new();
             int n = 0;
             int total = 0;
-            foreach(var type in asm.GetTypes().Where(x => x.IsAssignableTo(typeof(Model))))
+            foreach (var type in asm.GetTypes().Where(x => x.IsAssignableTo(typeof(Model))))
             {
                 var c = type.GetConstructor(Type.EmptyTypes);
                 var model = (Model)c!.Invoke(null);
-                foreach(var method in type.GetMethods())
+                foreach (var method in type.GetMethods())
                 {
                     // press F to pay respects
                     var d = DelegateBuilder.CreateCallbackDelegate(method);
@@ -39,7 +32,7 @@ namespace Tests.Emission.DelegateConstruction
                     {
                         try
                         {
-                            var result = d(null, null, model, null, null, null, "banana")!;
+                            var result = d(null, model, null, null, null)!;
                             if (result is SampleDataClass sdc) n += sdc.value;
                             else if (result is SampleDataStruct sds) n += sds.value;
                             else if (result is int i) n += i;

@@ -1,20 +1,13 @@
 ﻿using Containers.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Tests.Emission.DelegateConstruction.CodeGenerator
 {
     public class Compiler
     {
-
-        static string StubString = @"
+        private static string StubString = @"
 
 using System;
 using System.Runtime;
@@ -87,5 +80,5 @@ public class MethodHost : Model
     }
 
 
-    
+
 }

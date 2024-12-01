@@ -5,14 +5,11 @@ namespace Containers.Addressing
 {
     internal class HexEncoder<T> : IAddressEncoder
     {
-
-        static int Bits = 4;
-
-        static string[] Lookup;
-
-        static int Size;
-        static int TotalBits;
-        static int UsableSize;
+        private static int Bits = 4;
+        private static string[] Lookup;
+        private static int Size;
+        private static int TotalBits;
+        private static int UsableSize;
 
         static HexEncoder()
         {

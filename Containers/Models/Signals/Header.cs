@@ -1,4 +1,4 @@
-﻿namespace Containers.Signals
+﻿namespace Containers.Models.Signals
 {
     public struct Header
     {
@@ -48,7 +48,7 @@
         /// <param name="flag"></param>
         public Header(ushort value, bool flag)
         {
-            this.id = value;
+            id = value;
             DataFlag = flag;
         }
 
@@ -62,7 +62,7 @@
         {
             if (value < 0) throw new ArgumentOutOfRangeException($"Header ID value cannot be negative! Given: ({value})");
             value = short.Abs(value);
-            this.id = (ushort)value;
+            id = (ushort)value;
             DataFlag = flag;
         }
 

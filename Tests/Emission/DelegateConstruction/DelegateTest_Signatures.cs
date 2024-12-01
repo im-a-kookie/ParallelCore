@@ -1,12 +1,7 @@
 ﻿using Containers.Models;
-using Containers.Signals;
-using System;
-using System.Collections.Generic;
+using Containers.Models.Signals;
 using System.Drawing;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Tests.Emission.DelegateConstruction
 {

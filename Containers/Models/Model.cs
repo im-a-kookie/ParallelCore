@@ -1,10 +1,9 @@
 ﻿using Containers.Addressing;
+using Containers.Models.Abstractions;
 using Containers.Models.Attributes;
+using Containers.Models.Signals;
 using Containers.Signals;
 using Containers.Threading;
-using System.Reflection;
-using System.Xml.XPath;
-using System.Xml.Xsl;
 
 namespace Containers.Models
 {
@@ -15,15 +14,12 @@ namespace Containers.Models
         /// The ID for this model
         /// </summary>
         public Address<long> ID { get; private set; } = Address<long>.Zero;
-        
-        /// <summary>
-        /// internal activity flag
-        /// </summary>
-        private bool _active = false;
+
         /// <summary>
         /// Whether this model is currently active (aka looping)
         /// </summary>
-        public bool IsActive => _active;
+        public bool IsActive { get; private set; }
+
         /// <summary>
         /// Whether this model has been correctly constructed
         /// </summary>
@@ -32,7 +28,7 @@ namespace Containers.Models
         /// <summary>
         /// The provide that hosts this model
         /// </summary>
-        public Provider? Parent;
+        public ParallelSchema? Parent;
 
         /// <summary>
         /// The router instance that handles signals for this model class
@@ -60,55 +56,89 @@ namespace Containers.Models
         /// <summary>
         /// Event triggered when the thread enters this model.
         /// </summary>
-        public event Action? ThreadEnter;
+        public event Action<Model>? ThreadEnter;
 
         /// <summary>
         /// Event triggered when a signal is loaded from the queue for processing. Returning
         /// a non-null value from this step, will interrupt the normal processing of the signal.
         /// </summary>
-        public event Func<Signal, object?>? ProcessSignal;
+        public event Func<Model, Signal, object?>? ProcessSignal;
+
+        /// <summary>
+        /// Called when the model is ended, but before it is disposed.
+        /// </summary>
+        public event Action<Model>? OnModelEnd;
+
+        /// <summary>
+        /// Internal use, invokes the model end event
+        /// </summary>
+        internal void InvokeModelEnd()
+        {
+            IsActive = false;
+            OnModelEnd?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Called when the model comes to an end, before disposing.
+        /// </summary>
+        public event Action? OnModelDispose;
+
+        /// <summary>
+        /// Internal use, invokes the model dispose event
+        /// </summary>
+        internal void InvokeModelDispose() => OnModelDispose?.Invoke();
 
         /// <summary>
         /// The container that holds this model
         /// </summary>
-        public Container? Container { get; private set;}
+        public Container? Container { get; private set; }
 
         /// <summary>
         /// Creates a new model with the given provider
         /// </summary>
         /// <param name="provider"></param>
-        public Model(Provider? provider) : base()
+        public Model(ParallelSchema? provider) : base()
         {
             Parent = provider;
-            
+
             // Set the registry
-            if(provider != null)
+            if (provider != null)
             {
                 // Get ourselves an ID from the global lookup
-                if(ModelRegistry.LoadModel(this))
-                {   
+                if (ModelRegistry.LoadModel(this))
+                {
+
+                    //register us into the thing
+                    provider.ModelRegistry.Register(GetType());
+
                     // Get our signal router
-                    SignalRegistry = Parent!.ModelRegistry.GetRouterForModel(this);
+                    SignalRegistry = provider.ModelRegistry.GetRouterForModel(this);
                     // And get a new message queue
-                    MessageQueue = Parent.ProvideSignalQueue();
-                    // We are now fully constructed
+                    MessageQueue = provider.ProvideSignalQueue();
+
+                    // We are now fully constructed, so we can start
                     Constructed = true;
+                    provider.StartModel(this);
+
                 }
             }
             // If constructed was not set to "true" above,
             // Then this model did not construct correctly,
-            // and should die
+            // and should die probably
         }
 
         internal void NotifyContainerReceivedModel(Container container)
         {
             Console.WriteLine($"Model 0x{Address} received by container 0x{container.Address}");
             // We can mark that we are now active
-            _active = true;
+            IsActive = true;
             this.Container = container;
         }
 
-
+        /// <summary>
+        /// Called when the thread enters this model
+        /// </summary>
+        /// <param name="cancellation"></param>
         public void OnModelEnter(CancellationToken cancellation)
         {
             Console.WriteLine($"Model 0x{Address} Entered!");
@@ -118,7 +148,7 @@ namespace Containers.Models
                 Console.WriteLine($"Model 0x{Address} Received Message...!");
 
                 // Invoke the signal processing event
-                var result = ProcessSignal?.Invoke(signal!);
+                var result = ProcessSignal?.Invoke(this, signal!);
                 if (result == null)
                 {
                     // Process the signal and call the call thing
@@ -136,7 +166,7 @@ namespace Containers.Models
 
 
             //now we have a chance to loop
-            ThreadEnter?.Invoke();
+            ThreadEnter?.Invoke(this);
         }
 
         /// <summary>
@@ -150,7 +180,7 @@ namespace Containers.Models
         public bool ReceiveMessage(string command, object? data = null, TimeSpan? lifespan = null, TaskCompletionSource<object?>? taskCompletionSource = null)
         {
             var header = SignalRegistry?.SignalDictionary.GetHeader(command);
-            if(header != null)
+            if (header != null)
             {
                 return ReceiveMessage(header.Value, data, lifespan, taskCompletionSource);
             }
@@ -167,6 +197,8 @@ namespace Containers.Models
         /// <returns></returns>
         public bool ReceiveMessage(Header command, object? data = null, TimeSpan? lifespan = null, TaskCompletionSource<object?>? taskCompletionSource = null)
         {
+            if (!IsActive) return false;
+
             Signal s = new Signal()
             {
                 Flag = command,
@@ -176,18 +208,14 @@ namespace Containers.Models
                 CompletionSource = taskCompletionSource
             };
 
-
-            if(MessageQueue?.Queue(s) ?? false)
+            // Try to queue and notify
+            if (MessageQueue?.Queue(s) ?? false)
             {
                 Container?.Notify();
                 return true;
             }
             return false;
         }
-
-        public delegate object? SignalDelegate(object? data = null);
-
-        public delegate object? SignalDelegate<T>(T? data = default);
 
 
         /// <summary>
@@ -203,7 +231,7 @@ namespace Containers.Models
         }
 
 
-        public SignalDelegate? GetDelegate(string command)
+        public Delegates.SignalDelegate? GetDelegate(string command)
         {
             var header = SignalRegistry?.SignalDictionary.GetHeader(command);
             if (header == null) return null;
@@ -211,7 +239,7 @@ namespace Containers.Models
         }
 
 
-        public SignalDelegate<T>? GetDelegate<T>(string command)
+        public Delegates.SignalDelegate<T>? GetDelegate<T>(string command)
         {
             var header = SignalRegistry?.SignalDictionary.GetHeader(command);
             if (header == null) return null;
@@ -223,6 +251,7 @@ namespace Containers.Models
         public void Exit(string? thing)
         {
             Logger.Default.Info("Received Exit Command! Extra: " + (thing ?? "<null>"));
+            Container?.Exit();
         }
 
 
