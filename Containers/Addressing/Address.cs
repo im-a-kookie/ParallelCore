@@ -55,6 +55,7 @@ namespace Containers.Addressing
         /// </summary>
         private static byte[] Bonkler;
 
+        public static Address<T> Zero = new(default);
 
         /// <summary>
         /// Set up static information for address hashing etc later
@@ -309,6 +310,10 @@ namespace Containers.Addressing
             return MemoryMarshal.Read<T>(data.AsSpan().Slice(0, _byteSize));
         }
 
+        public override string ToString()
+        {
+            return Text;
+        }
 
         public override int GetHashCode()
         {
