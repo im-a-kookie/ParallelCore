@@ -1,6 +1,6 @@
 # ParallelCore
 
-ParallelCore is a C# library for building and running logic models in parallel environments. It provides an easy-to-use framework for managing and interacting with models, and distributing models over configurable parallel schema (particularly, threadpool). Attributes, Reflection and IL Generation are used to map model layout to delegates for efficient invocation.
+ParallelCore is a C# library for building and running logic models in parallel environments. It provides an easy-to-use framework for managing and interacting with models, and distributing models over configurable parallel schema (particularly, threadpool). Attributes, Reflection and IL Generation are used to map model layout to delegates for efficient invocation. Task Parallel Library integration provides async/await for dispatched commands.
 
 ---
 
@@ -19,20 +19,22 @@ ParallelCore is a C# library for building and running logic models in parallel e
 ### Architecture
 1. **Models**:
    - Define the core logic of the application.
-   - Can attribute methods and subscribe to events to execute threaded code
+   - Provides clear threadsafe state encapsulation
+   - Method discovery and events for threaded execution
+   - Supports configurable update rates and scheduling
 
 2. **Parallel Schema**:
-   - Defaults to a thread pool but can be customized.
-   - Provides message configurable message loops to models
+   - Configurable. Defaults to threadpool.
+   - Defines how thread context is provided to Models
 
 3. **Reflection and IL Generation**:
-   - Runtime discovery of methods.
-   - Flexible signature handling using ILGenerator.
+   - Runtime discovery of methods via Reflection
+   - Efficient runtime mapping of method signatures via IL Generation
+   - Only supports one arbitrary parameter. TODO support more.
 
 4. **Synchronization Patterns**:
-   - Ensures safe execution across threads.
-   - Supports configurable update rates and update scheduling
-
+   - Ensures safe threaded execution and encapsulation of thread context by model
+   - Actor-Model, State Pattern, Observer Pattern, Message Pattern, etc
 ---
 
 ## Code Examples
@@ -91,6 +93,7 @@ instance.OnTick += () => Console.WriteLine("Model Ticked!");
 
 ## Patterns Used
 
+- **State Pattern**: Encapsulation of state for resource safety.
 - **Observer Pattern**: For subscribing to and broadcasting events.
 - **Message Loop Pattern**: Centralized processing of model messages.
 - **ThreadPool Pattern**: Efficient parallel execution and thread management.
@@ -104,17 +107,17 @@ instance.OnTick += () => Console.WriteLine("Model Ticked!");
    ```bash
    git clone https://github.com/im-a-kookie/ParallelCore.git
    ```
-2. Build the project and add the compiled library to your application.
-3. Follow examples above to create models.
+2. Build and reference library in project
+3. Follow examples above to get started
 
 ---
 
 ## Contributions
 
-Welcome, please open an issue or send PR.
+Contributions welcome, please open an issue or send PR.
 
 ---
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License
 
