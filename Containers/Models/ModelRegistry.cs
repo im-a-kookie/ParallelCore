@@ -27,12 +27,34 @@ namespace Containers.Signals
             return true;
         }
 
-
         /// <summary>
         /// The global model address provider, which provides unique addresses
         /// across the entire instance provider
         /// </summary>
-        IAddressProvider<long> GlobalModelAddressProvider = new AddressProvider<long>();
+        static IAddressProvider<long> GlobalModelAddressProvider = new AddressProvider<long>();
+
+        /// <summary>
+        /// A mapping of all active instances by their addressed ID
+        /// </summary>
+        static ConcurrentDictionary<Address<long>, Model> _instanceMapping = [];
+
+        /// <summary>
+        /// Loads the given model into the global registry.
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <remarks>This method is static, as it allows models to be found instance-wide between providers</remarks>
+        public static bool LoadModel(Model model)
+        {
+            if (model.Constructed) return false;
+            var address = model.Address;
+            if (!_instanceMapping.TryAdd(address, model))
+            {
+                throw new InvalidOperationException($"A model is already registered to {address}!");
+            }
+            return true;
+        }
 
         /// <summary>
         /// The address provider which provides ID values for each Type that can be instantiated as a model
@@ -60,7 +82,7 @@ namespace Containers.Signals
         ConcurrentDictionary<Type, Router> _typeToRouter = [];
 
         /// <summary>
-        /// Register a given type to be instantiated as a model. This method should be Idempotent for like types.
+        /// Register a given type to be instantiated as a model. This method should be idempotent for like types.
         /// </summary>
         public void Register(Type t)
         {
@@ -81,6 +103,18 @@ namespace Containers.Signals
                         Router router = new Router(id, t);
                         _typeToRouter.TryAdd(t, router);
                         _idToRouter.TryAdd(id, router);
+
+                        // Go through all of the methods
+                        // We want literally all of them
+                        foreach (var method in t.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                        {
+                            var attribute = method.GetCustomAttribute<Endpoint>();
+                            if (attribute != null)
+                            {
+                                router.SignalDictionary.Register(method);
+                            }
+                        }
+
                         // doink
                         Logger.Default.Info($"Registered Model: {t}");
                     }
@@ -109,6 +143,7 @@ namespace Containers.Signals
                     $"Model type {t.Name} Must be registered before use!");
             }
         }
+
 
 
 

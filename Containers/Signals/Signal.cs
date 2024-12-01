@@ -12,6 +12,9 @@ namespace Containers.Signals
 
         public Packet? Data;
 
+        public TaskCompletionSource<object?>? CompletionSource;
+
+        public DateTime Expiration = DateTime.MaxValue;
 
     }
 }

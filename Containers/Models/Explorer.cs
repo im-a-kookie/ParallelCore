@@ -1,4 +1,6 @@
-﻿using Containers.Models.Attributes;
+﻿using Containers.Emission;
+using Containers.Models.Attributes;
+using Containers.Signals;
 using System.Reflection;
 
 namespace Containers.Models
@@ -9,10 +11,12 @@ namespace Containers.Models
     public class Explorer
     {
 
-        public void ExploreType(Type t)
+        public static List<Wrapper> ExploreType(Type t)
         {
             if (t.IsAssignableTo(typeof(Model)))
                 throw new ArgumentException("The type being explored must be a subclass of Models.Model!");
+
+            List<Wrapper> results = new();
 
             // Go through all of the methods
             // We want literally all of them
@@ -24,13 +28,18 @@ namespace Containers.Models
 
                     // now let's generate the method
 
+                    var result = DelegateBuilder.CreateCallbackDelegate(method, out var context);
 
+                    // We need to generate the generic wrapper type, for reasons
+                    var wrapperType = typeof(Wrapper<,>).MakeGenericType(context!.TargetReturn, context.DataType);
+                    var wrapperConstructor = wrapperType?.GetConstructor([typeof(Router.EndpointCallback)]);
+                    var wrapper = wrapperConstructor?.Invoke([result]);
 
-
-
-
-
-
+                    // Now, we can install it
+                    if(wrapper != null)
+                    {
+                        results.Add((Wrapper)wrapper);
+                    }
 
                     // Alias tries to register first, then Name as default
                     string?[] names = [attribute.Alias, method.Name];
@@ -43,12 +52,10 @@ namespace Containers.Models
                         if (nameCount == 0) break;
                         --nameCount;
                     }
-
-
                 }
-
-
             }
+
+            return results;
 
         }
 

@@ -62,6 +62,12 @@ namespace Containers.Models
         /// <returns></returns>
         public void Unlock();
 
+        /// <summary>
+        /// Cleans expired messages from this queue based on <see cref="Signal.Expiration"/>
+        /// </summary>
+        public void CleanExpiredMessages();
+
+
 
     }
 }

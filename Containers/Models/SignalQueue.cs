@@ -11,6 +11,9 @@ namespace Containers.Models
 
         ReaderWriterLockSlim _lock = new();
 
+
+        private long _soonestExpirationTime = DateTime.MaxValue.Ticks;
+
         public int Count()
         {
             return _internalQueue.Count;
@@ -34,17 +37,24 @@ namespace Containers.Models
         public bool Queue(Signal signal, int timeoutMs = -1)
         {
             if (_maxSize > 0 && Count() >= _maxSize) return false;
-            if (_lock.TryEnterReadLock(timeoutMs))
+            if (_lock.TryEnterUpgradeableReadLock(timeoutMs))
             {
                 try
                 {
                     //add the signal to the queue
                     _internalQueue.Add(signal);
+                    // Atomically update the soonest expiration time if the new expiration time is earlier
+                    long currentMin = _soonestExpirationTime;
+                    long newMin = Math.Min(currentMin, signal.Expiration.Ticks);
+                    // If currentMin is still the same, update it with newMin
+                    Interlocked.CompareExchange(ref _soonestExpirationTime, newMin, currentMin);
+
+                    CleanExpiredMessages();
                     return true;
                 }
                 finally
                 {
-                    if (_lock.IsReadLockHeld) _lock.ExitReadLock();
+                    if (_lock.IsUpgradeableReadLockHeld) _lock.ExitUpgradeableReadLock();
                 }
             }
             return false;
@@ -70,5 +80,36 @@ namespace Containers.Models
         }
 
 
+        public void CleanExpiredMessages()
+        {
+            var time = DateTime.UtcNow.Ticks;
+            if (time > _soonestExpirationTime)
+            {
+                Lock(-1);
+                try
+                {
+                    _soonestExpirationTime = DateTime.MaxValue.Ticks;
+                    // Popping equal to the count will cycle the entire queue
+                    int reps = _internalQueue.Count;
+                    for (int i = 0; i < reps; ++i)
+                    {
+                        // so take it and only add it back if it's unexpired
+                        if (_internalQueue.TryTake(out var item))
+                        {
+                            if (item.Expiration.Ticks > time)
+                            {
+                                _internalQueue.Add(item);
+                                if(item.Expiration.Ticks < _soonestExpirationTime)
+                                    _soonestExpirationTime = item.Expiration.Ticks;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    Unlock();
+                }
+            }
+        }
     }
 }

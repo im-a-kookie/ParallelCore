@@ -2,6 +2,10 @@
 {
     public struct Header
     {
+
+        public static int Max_Value => short.MaxValue;
+
+
         /// <summary>
         /// The header value (references the packet identifier
         /// </summary>

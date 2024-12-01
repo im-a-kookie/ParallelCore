@@ -1,4 +1,5 @@
 ﻿using Containers.Addressing;
+using Containers.Emission;
 using Containers.Models;
 
 namespace Containers.Signals
@@ -26,7 +27,7 @@ namespace Containers.Signals
         /// <remarks>
         /// Implementation assumes dynamic remapping of parameters. Declaration order of parameters indicates priority when wildcarding.
         /// </remarks>
-        public delegate object? EndpointCallback(Signal? signal, object? data, Model? receiver, Provider? provider, ModelRegistry? registry, Router? router, string? command);
+        public delegate object? EndpointCallback(object? data, Model? receiver, Provider? provider, ModelRegistry? registry, Router? router);
 
         /// <summary>
         /// The ID address of this router (unique)
@@ -38,12 +39,10 @@ namespace Containers.Signals
         /// </summary>
         Type ModelType;
 
-
         /// <summary>
-        /// A class that provides signal-lookups for the provided model
+        /// The signal dictionary that translates comings and goings from this router
         /// </summary>
-        SignalDictionary Lookup = new();
-
+        public SignalDictionary SignalDictionary { get; set; }
 
         /// <summary>
         /// Creates a new Router that with the provided ID, that binds to the given model type (that must inherit <see cref="Model"/>
@@ -62,9 +61,18 @@ namespace Containers.Signals
             // Set the fields
             this.ID = id;
             this.ModelType = modelType;
+            SignalDictionary = new SignalDictionary(modelType);
         }
 
-
+        /// <summary>
+        /// Gets the wrapper indicated by the given header
+        /// </summary>
+        /// <param name="header"></param>
+        /// <returns></returns>
+        public Wrapper? GetCallback(Header header)
+        {
+            return SignalDictionary.GetWrapper(header);
+        }
 
     }
 }
