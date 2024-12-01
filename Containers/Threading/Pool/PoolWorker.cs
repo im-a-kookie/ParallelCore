@@ -1,15 +1,27 @@
-﻿namespace Containers.Threading.Pool
+﻿using Containers.Addressing;
+
+namespace Containers.Threading.Pool
 {
-    abstract class PoolWorker
+    public abstract class PoolWorker : Addressable
     {
-        ParallelPoolSchema ParallelProvider;
-        public PoolWorker(ParallelPoolSchema provider)
+        public ParallelPoolSchema ParallelProvider;
+        public PoolWorker(ParallelPoolSchema provider) : base()
         {
             this.ParallelProvider = provider;
+            // Start the thread
+            Thread t = new Thread(() =>
+            {
+                _EntryPoint(ParallelProvider.CancellationToken);
+            });
+            // doink
+            t.Start();
         }
 
-
-        public abstract void _EntryPoint();
+        /// <summary>
+        /// The Entry Point for the thread that runs within this pool worker entity
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        public abstract void _EntryPoint(CancellationToken cancellationToken);
 
     }
 }

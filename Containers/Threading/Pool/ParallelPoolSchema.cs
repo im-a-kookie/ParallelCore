@@ -2,24 +2,34 @@
 
 namespace Containers.Threading.Pool
 {
-    internal class ParallelPoolSchema : ParallelSchema
+    public class ParallelPoolSchema : ParallelSchema
     {
+
+        public PoolSupervisor? PoolSupervisor { get; private set; }
 
         public int MaxPoolSize { get; set; }
 
         public ParallelPoolSchema()
         {
 
+            CancellationSource = new();
+            CancellationToken = CancellationSource.Token;
+
         }
 
         public override void OnStart()
         {
-            throw new NotImplementedException();
+            //create a new pool supervisor
+            PoolSupervisor = new PoolSupervisor(this);
         }
 
         public override void RunModel(Model model)
         {
-            throw new NotImplementedException();
+            PoolSupervisor?.AwaitingModels.Enqueue(model);
+            PoolSupervisor?.signal.Set();
         }
+
+
+
     }
 }
